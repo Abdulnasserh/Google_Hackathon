@@ -1,0 +1,12 @@
+# AI PC Live Technician — Python Dependencies
+# ==============================================
+
+# Google ADK (Agent Development Kit) for Bidi-streaming
+google-adk>=1.0.0
+
+# FastAPI + WebSocket server
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+
+# Environment variable management
+python-dotenv>=1.0.0
