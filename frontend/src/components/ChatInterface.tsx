@@ -8,7 +8,8 @@ import {
     Activity,
     ArrowUpRight,
     MonitorUp,
-    ImagePlus
+    ImagePlus,
+    Download
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -145,7 +146,17 @@ export function ChatInterface() {
                                     <span className="w-1.5 h-1.5 rounded-full bg-white/30"></span> Offline / Idle
                                 </span>
                             )}
-                            <div className="mt-1 text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</div>
+                            <div className="mt-1 flex items-center gap-2">
+                                <span className="text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</span>
+                                <div className="flex gap-1.5 border-l border-white/10 pl-2">
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/latest" target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon">
+                                        <Download className="w-2.5 h-2.5" /> Win
+                                    </a>
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/latest" target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Daemon">
+                                        <Download className="w-2.5 h-2.5" /> Mac
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 p-[2px] shadow-[0_0_15px_rgba(56,189,248,0.3)]">
                             <div className="h-full w-full rounded-full bg-[#0a0a0f] overflow-hidden flex items-center justify-center">
