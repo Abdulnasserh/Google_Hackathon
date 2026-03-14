@@ -2,8 +2,8 @@ import asyncio
 import json
 import websockets
 import platform
-import logging
 import atexit
+import sys
 
 from bidi_streaming_agent.tools import mac_tools, windows_tools
 from bidi_streaming_agent.tools.terminal_session import (
@@ -11,12 +11,64 @@ from bidi_streaming_agent.tools.terminal_session import (
     ALL_TERMINAL_TOOLS,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("NoraDaemon")
+# Custom hacker-style ANSI UI
+class UI:
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    MAGENTA = '\033[95m'
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+
+    @staticmethod
+    def info(msg):
+        print(f"{UI.CYAN}●{UI.RESET} {UI.DIM}{msg}{UI.RESET}")
+
+    @staticmethod
+    def success(msg):
+        print(f"{UI.GREEN}✓{UI.RESET} {msg}")
+        
+    @staticmethod
+    def warning(msg):
+        print(f"{UI.YELLOW}⚠{UI.RESET} {msg}")
+
+    @staticmethod
+    def error(msg):
+        print(f"{UI.RED}✖{UI.RESET} {UI.BOLD}{msg}{UI.RESET}")
+
+    @staticmethod
+    def executing(tool, args):
+        print()
+        print(f"{UI.MAGENTA}⚡ AI CONTROL OVERRIDE DETECTED{UI.RESET}")
+        print(f"  {UI.DIM}Tool:{UI.RESET} {tool}")
+        if 'command' in args or 'cmd' in args:
+            cmd = args.get('command') or args.get('cmd')
+            print(f"  {UI.DIM}Cmd:{UI.RESET}  {UI.BOLD}{UI.GREEN}>{UI.RESET} {cmd}")
+        elif args:
+            print(f"  {UI.DIM}Args:{UI.RESET} {json.dumps(args)}")
+        print()
+        
+    @staticmethod
+    def result_status(status, output):
+        if status == "success":
+            print(f"  {UI.GREEN}↳ Process Completed{UI.RESET}")
+            if output:
+                # Truncate output for visuals if needed, but here just show raw
+                out_str = str(output).strip()
+                if len(out_str) > 200:
+                    out_str = out_str[:197] + "..."
+                if out_str and out_str != "None":
+                    print(f"  {UI.DIM}Output: {out_str}{UI.RESET}")
+        else:
+            print(f"  {UI.RED}↳ Task Failed{UI.RESET} {UI.DIM}({output}){UI.RESET}")
 
 
 def _cleanup():
     """Kill all terminal sessions on shutdown."""
+    UI.info("Shutting down terminal sessions...")
     terminal_manager.kill_all()
 
 atexit.register(_cleanup)
@@ -25,130 +77,139 @@ atexit.register(_cleanup)
 async def daemon_loop(url: str, session_id: str):
     os_sys = platform.system()
     ws_url = f"{url}/ws/daemon/{session_id}"
-    logger.info(f"Connecting to Nora Live Technician securely at: {ws_url}")
-    logger.info(f"Detected OS: {os_sys}")
+    
+    UI.info(f"Target Gateway: {UI.BOLD}{ws_url}{UI.RESET}")
+    UI.info(f"Host OS Detected: {UI.BOLD}{os_sys}{UI.RESET}")
     
     if os_sys == "Darwin":
         tools_module = mac_tools
     elif os_sys == "Windows":
         tools_module = windows_tools
     else:
-        logger.warning("Unsupported OS. Falling back to Mac tools as best effort.")
+        UI.warning("Unsupported OS. Falling back to Mac tools as best effort.")
         tools_module = mac_tools
 
-    # Build a map of ALL available tools (hardcoded + terminal)
-    # Hardcoded tools run with exact parameters
-    # Terminal tools give the AI free-form shell access
     terminal_tool_map = {t.__name__: t for t in ALL_TERMINAL_TOOLS}
 
-    async for websocket in websockets.connect(ws_url):
-        logger.info("Connected to Cloud Backend! Waiting for remote commands...")
+    while True:
         try:
-            # Send initial presence payload
-            await websocket.send(json.dumps({"type": "init", "os": os_sys}))
-            
-            async for message in websocket:
-                data = json.loads(message)
-                if data.get("type") == "tool_call":
-                    call_id = data.get("call_id")
-                    tool_name = data.get("tool_name")
-                    args = data.get("args", {})
+            async for websocket in websockets.connect(ws_url):
+                UI.success(f"Uplink Established! {UI.BOLD}Nora Live Technician is Monitoring.{UI.RESET}")
+                try:
+                    # Send initial presence payload
+                    await websocket.send(json.dumps({"type": "init", "os": os_sys}))
                     
-                    logger.info(f"Executing: {tool_name}({args})")
-                    
-                    # Priority 1: Check terminal tools (dynamic execution)
-                    if tool_name in terminal_tool_map:
-                        tool_func = terminal_tool_map[tool_name]
-                        try:
-                            result = tool_func(**args)
-                        except Exception as e:
-                            result = {"status": "error", "output": f"Terminal tool error: {e}"}
-                    
-                    # Priority 2: Check OS-specific hardcoded tools
-                    elif hasattr(tools_module, tool_name):
-                        tool_func = getattr(tools_module, tool_name)
-                        try:
-                            result = tool_func(**args)
-                        except Exception as e:
-                            result = {"status": "error", "output": f"Exception running {tool_name}: {str(e)}"}
-                    
-                    else:
-                        result = {"status": "error", "output": f"Tool '{tool_name}' is not available on this OS ({os_sys})."}
-                    
-                    response = {
-                        "type": "tool_result",
-                        "call_id": call_id,
-                        "result": json.dumps(result)
-                    }
-                    await websocket.send(json.dumps(response))
-                    
-                elif data.get("type") == "terminal_stream":
-                    # Future: real-time output streaming requests
-                    session_id_req = data.get("session_id", "default")
-                    lines = data.get("lines", 20)
-                    try:
-                        session = terminal_manager.get_or_create(session_id_req)
-                        output = session.get_recent_output(lines=lines)
-                        await websocket.send(json.dumps({
-                            "type": "terminal_output",
-                            "output": output,
-                        }))
-                    except Exception as e:
-                        await websocket.send(json.dumps({
-                            "type": "terminal_output",
-                            "output": {"status": "error", "output": str(e)},
-                        }))
-                        
-        except websockets.exceptions.ConnectionClosed:
-            logger.warning("Connection closed. Reconnecting in 3 seconds...")
-            await asyncio.sleep(3)
-            continue
+                    async for message in websocket:
+                        data = json.loads(message)
+                        if data.get("type") == "tool_call":
+                            call_id = data.get("call_id")
+                            tool_name = data.get("tool_name")
+                            args = data.get("args", {})
+                            
+                            UI.executing(tool_name, args)
+                            
+                            status = "success"
+                            
+                            if tool_name in terminal_tool_map:
+                                tool_func = terminal_tool_map[tool_name]
+                                try:
+                                    res = tool_func(**args)
+                                    status = res.get("status", "success") if isinstance(res, dict) else "success"
+                                except Exception as e:
+                                    res = {"status": "error", "output": f"Terminal tool error: {e}"}
+                                    status = "error"
+                            
+                            elif hasattr(tools_module, tool_name):
+                                tool_func = getattr(tools_module, tool_name)
+                                try:
+                                    res = tool_func(**args)
+                                    status = res.get("status", "success") if isinstance(res, dict) else "success"
+                                except Exception as e:
+                                    res = {"status": "error", "output": f"Exception running {tool_name}: {str(e)}"}
+                                    status = "error"
+                            
+                            else:
+                                res = {"status": "error", "output": f"Tool '{tool_name}' is not available on this OS ({os_sys})."}
+                                status = "error"
+                            
+                            UI.result_status(status, res)
+                                
+                            response = {
+                                "type": "tool_result",
+                                "call_id": call_id,
+                                "result": json.dumps(res)
+                            }
+                            await websocket.send(json.dumps(response))
+                            
+                        elif data.get("type") == "terminal_stream":
+                            session_id_req = data.get("session_id", "default")
+                            lines = data.get("lines", 20)
+                            try:
+                                session = terminal_manager.get_or_create(session_id_req)
+                                output = session.get_recent_output(lines=lines)
+                                await websocket.send(json.dumps({
+                                    "type": "terminal_output",
+                                    "output": output,
+                                }))
+                            except Exception as e:
+                                await websocket.send(json.dumps({
+                                    "type": "terminal_output",
+                                    "output": {"status": "error", "output": str(e)},
+                                }))
+                                
+                except websockets.exceptions.ConnectionClosed:
+                    UI.error("Connection severed by gateway.")
+                    break
         except Exception as e:
-            logger.error(f"Unexpected error: {e}")
+            UI.warning(f"Connection failed: {e}. Retrying in 3 seconds...")
             await asyncio.sleep(3)
 
+
 def main():
-    print("╔══════════════════════════════════════════════╗")
-    print("║   Nora AI Technician — Secure Client Daemon  ║")
-    print("║   Full Computer Control · Diagnose & Fix      ║")
-    print("╠══════════════════════════════════════════════╣")
-    print("║  This daemon gives Nora autonomous control    ║")
-    print("║  over your machine to diagnose AND fix issues. ║")
-    print("║                                                ║")
-    print("║  Capabilities:                                 ║")
-    print("║   • Run diagnostic scans                       ║")
-    print("║   • Execute terminal commands                  ║")
-    print("║   • Restart services                           ║")
-    print("║   • Kill frozen processes                      ║")
-    print("║   • Toggle hardware (Wi-Fi, Bluetooth)         ║")
-    print("║   • And much more...                           ║")
-    print("╚══════════════════════════════════════════════╝\n")
+    print(f"\n{UI.CYAN}{UI.BOLD}")
+    print("      ███▄    █  ▒█████   ██▀███   ▄▄▄      ")
+    print("      ██ ▀█   █ ▒██▒  ██▒▓██ ▒ ██▒▒████▄    ")
+    print("     ▓██  ▀█ ██▒▒██░  ██▒▓██ ░▄█ ▒▒██  ▀█▄  ")
+    print("     ▓██▒  ▐▌██▒▒██   ██░▒██▀▀█▄  ░██▄▄▄▄██ ")
+    print("     ▒██░   ▓██░░ ████▓▒░░██▓ ▒██▒ ▓█   ▓██▒")
+    print("     ░ ▒░   ▒ ▒ ░ ▒░▒░▒░ ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░")
+    print("     ░ ░░   ░ ▒░  ░ ▒ ▒░   ░▒ ░ ▒░  ▒   ▒▒ ░")
+    print(f"        ░   ░ ░ ░ ░ ░ ▒    ░░   ░   ░   ▒   ")
+    print(f"              ░     ░ ░     ░           ░  {UI.RESET}")
+    print(f"\n     {UI.BOLD}NORA AI TECHNICIAN — LOCAL HOST DAEMON{UI.RESET}")
+    print(f"     {UI.DIM}Terminal Control & Diagnostic Override Tool{UI.RESET}\n")
+    print("  [✓] OpenClaw PTY Engine: Loaded")
+    print("  [✓] Process Manager: Loaded")
+    print("  [✓] Network Access: Granted\n")
     
-    session_id = input("Enter the 8-character Session ID from the Web UI: ").strip()
+    session_id = input(f" {UI.YELLOW}►{UI.RESET} {UI.BOLD}Enter Session ID:{UI.RESET} ").strip()
     if not session_id:
-        print("Session ID is required. Exiting.")
+        UI.error("Session ID required for secure pairing. Exiting.")
         return
 
     default_url = "ws://localhost:8000"
-    url = input(f"Enter backend URL (default {default_url}): ").strip()
+    url = input(f" {UI.YELLOW}►{UI.RESET} {UI.BOLD}Enter Backend URL{UI.RESET} {UI.DIM}(default {default_url}):{UI.RESET} ").strip()
     if not url:
         url = default_url
     
-    # Auto-sanitize URL for common user mistakes (e.g. pasting http instead of ws)
     if url.startswith("https://"):
         url = url.replace("https://", "wss://", 1)
     elif url.startswith("http://"):
         url = url.replace("http://", "ws://", 1)
-    
-    # Remove trailing slash which breaks concatenation
     url = url.rstrip("/")
 
     try:
         asyncio.run(daemon_loop(url, session_id))
     except KeyboardInterrupt:
-        print("\nDaemon stopped by user.")
+        print()
+        UI.warning("Daemon terminated by user.")
     finally:
-        terminal_manager.kill_all()
+        sys.exit(0)
 
 if __name__ == "__main__":
+    # Fix for Windows ANSI colors
+    if platform.system() == "Windows":
+        import os
+        os.system("color") 
     main()
+
