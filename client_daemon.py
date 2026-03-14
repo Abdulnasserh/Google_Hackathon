@@ -3,11 +3,24 @@ import json
 import websockets
 import platform
 import logging
+import atexit
 
 from bidi_streaming_agent.tools import mac_tools, windows_tools
+from bidi_streaming_agent.tools.terminal_session import (
+    terminal_manager,
+    ALL_TERMINAL_TOOLS,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("NoraDaemon")
+
+
+def _cleanup():
+    """Kill all terminal sessions on shutdown."""
+    terminal_manager.kill_all()
+
+atexit.register(_cleanup)
+
 
 async def daemon_loop(url: str, session_id: str):
     os_sys = platform.system()
@@ -23,8 +36,13 @@ async def daemon_loop(url: str, session_id: str):
         logger.warning("Unsupported OS. Falling back to Mac tools as best effort.")
         tools_module = mac_tools
 
+    # Build a map of ALL available tools (hardcoded + terminal)
+    # Hardcoded tools run with exact parameters
+    # Terminal tools give the AI free-form shell access
+    terminal_tool_map = {t.__name__: t for t in ALL_TERMINAL_TOOLS}
+
     async for websocket in websockets.connect(ws_url):
-        logger.info("Connected to Cloud Backend! Waiting for remote diagnostic commands...")
+        logger.info("Connected to Cloud Backend! Waiting for remote commands...")
         try:
             # Send initial presence payload
             await websocket.send(json.dumps({"type": "init", "os": os_sys}))
@@ -36,17 +54,26 @@ async def daemon_loop(url: str, session_id: str):
                     tool_name = data.get("tool_name")
                     args = data.get("args", {})
                     
-                    logger.info(f"Executing tool request: {tool_name} with args: {args}")
+                    logger.info(f"Executing: {tool_name}({args})")
                     
-                    if hasattr(tools_module, tool_name):
+                    # Priority 1: Check terminal tools (dynamic execution)
+                    if tool_name in terminal_tool_map:
+                        tool_func = terminal_tool_map[tool_name]
+                        try:
+                            result = tool_func(**args)
+                        except Exception as e:
+                            result = {"status": "error", "output": f"Terminal tool error: {e}"}
+                    
+                    # Priority 2: Check OS-specific hardcoded tools
+                    elif hasattr(tools_module, tool_name):
                         tool_func = getattr(tools_module, tool_name)
                         try:
-                            # Tools are synchronous in our modules
                             result = tool_func(**args)
                         except Exception as e:
                             result = {"status": "error", "output": f"Exception running {tool_name}: {str(e)}"}
+                    
                     else:
-                        result = {"status": "error", "output": f"Tool {tool_name} is not available on this OS ({os_sys})."}
+                        result = {"status": "error", "output": f"Tool '{tool_name}' is not available on this OS ({os_sys})."}
                     
                     response = {
                         "type": "tool_result",
@@ -54,6 +81,24 @@ async def daemon_loop(url: str, session_id: str):
                         "result": json.dumps(result)
                     }
                     await websocket.send(json.dumps(response))
+                    
+                elif data.get("type") == "terminal_stream":
+                    # Future: real-time output streaming requests
+                    session_id_req = data.get("session_id", "default")
+                    lines = data.get("lines", 20)
+                    try:
+                        session = terminal_manager.get_or_create(session_id_req)
+                        output = session.get_recent_output(lines=lines)
+                        await websocket.send(json.dumps({
+                            "type": "terminal_output",
+                            "output": output,
+                        }))
+                    except Exception as e:
+                        await websocket.send(json.dumps({
+                            "type": "terminal_output",
+                            "output": {"status": "error", "output": str(e)},
+                        }))
+                        
         except websockets.exceptions.ConnectionClosed:
             logger.warning("Connection closed. Reconnecting in 3 seconds...")
             await asyncio.sleep(3)
@@ -63,12 +108,21 @@ async def daemon_loop(url: str, session_id: str):
             await asyncio.sleep(3)
 
 def main():
-    print("===========================================")
-    print(" Nora AI Technician — Secure Client Daemon ")
-    print("===========================================")
-    print("This daemon allows the Cloud AI Agent to run")
-    print("safe, read-only diagnostic tools on your PC.")
-    print("===========================================\n")
+    print("╔══════════════════════════════════════════════╗")
+    print("║   Nora AI Technician — Secure Client Daemon  ║")
+    print("║   Full Computer Control · Diagnose & Fix      ║")
+    print("╠══════════════════════════════════════════════╣")
+    print("║  This daemon gives Nora autonomous control    ║")
+    print("║  over your machine to diagnose AND fix issues. ║")
+    print("║                                                ║")
+    print("║  Capabilities:                                 ║")
+    print("║   • Run diagnostic scans                       ║")
+    print("║   • Execute terminal commands                  ║")
+    print("║   • Restart services                           ║")
+    print("║   • Kill frozen processes                      ║")
+    print("║   • Toggle hardware (Wi-Fi, Bluetooth)         ║")
+    print("║   • And much more...                           ║")
+    print("╚══════════════════════════════════════════════╝\n")
     
     session_id = input("Enter the 8-character Session ID from the Web UI: ").strip()
     if not session_id:
@@ -93,6 +147,8 @@ def main():
         asyncio.run(daemon_loop(url, session_id))
     except KeyboardInterrupt:
         print("\nDaemon stopped by user.")
+    finally:
+        terminal_manager.kill_all()
 
 if __name__ == "__main__":
     main()

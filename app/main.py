@@ -53,6 +53,7 @@ from bidi_streaming_agent.agent import root_agent
 import inspect
 from bidi_streaming_agent.tools.mac_tools import ALL_MAC_TOOLS
 from bidi_streaming_agent.tools.windows_tools import ALL_WINDOWS_TOOLS
+from bidi_streaming_agent.tools.terminal_session import ALL_TERMINAL_TOOLS
 
 connected_daemons: dict[str, WebSocket] = {}
 daemon_responses: dict[str, asyncio.Future] = {}
@@ -74,8 +75,8 @@ async def notify_daemon_status(session_id: str, status: str):
 def build_remote_tools_for_session(session_id: str):
     unique_tool_names = set()
     all_tools = []
-    # Collect all unique tools across Mac and Windows
-    for t in ALL_MAC_TOOLS + ALL_WINDOWS_TOOLS:
+    # Collect all unique tools across Mac, Windows, and Terminal Session
+    for t in ALL_MAC_TOOLS + ALL_WINDOWS_TOOLS + ALL_TERMINAL_TOOLS:
         if t.__name__ not in unique_tool_names:
             unique_tool_names.add(t.__name__)
             all_tools.append(t)
