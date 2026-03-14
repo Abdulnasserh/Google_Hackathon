@@ -8,9 +8,9 @@
 .vscode
 venv/
 .venv/
-node_modules/
-frontend/
+**/node_modules/
+frontend/dist/
 *.log
 README.md
-Dockerfile
-.dockerignore
+# We keep Dockerfile and .dockerignore listed to keep the context clean, 
+# though they are technically not needed inside the image.
