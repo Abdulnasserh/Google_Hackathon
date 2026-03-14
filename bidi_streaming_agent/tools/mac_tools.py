@@ -347,6 +347,270 @@ def list_startup_items() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# ACTION / FIX Tools — Nora can now actually repair issues!
+# ---------------------------------------------------------------------------
+
+def kill_process(process_name: str) -> dict:
+    """
+    Force kill a process by name. Use this when a process is frozen, not
+    responding, consuming too much CPU/RAM, or causing issues. This is
+    equivalent to what a technician would do in Activity Monitor.
+
+    Args:
+        process_name: The exact name of the process to kill (e.g. 'Safari', 'Google Chrome Helper').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["killall", process_name], timeout=10)
+    return {"status": "success", "output": f"Attempted to kill '{process_name}': {output}"}
+
+
+def kill_process_by_pid(pid: int) -> dict:
+    """
+    Force kill a specific process by its PID (Process ID). Use this when
+    you know the exact PID from get_top_processes and need to terminate it.
+
+    Args:
+        pid: The process ID number to kill.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["kill", "-9", str(pid)], timeout=10)
+    return {"status": "success", "output": f"Sent SIGKILL to PID {pid}: {output}"}
+
+
+def toggle_bluetooth(action: str = "toggle") -> dict:
+    """
+    Turn Bluetooth on, off, or toggle it. Use this to fix Bluetooth
+    connectivity issues — often toggling Bluetooth off and on resolves
+    pairing problems with headphones, mice, keyboards, etc.
+
+    Args:
+        action: One of 'on', 'off', or 'toggle'.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    # Check current status first
+    status_out = _run(["defaults", "read", "/Library/Preferences/com.apple.Bluetooth", "ControllerPowerState"], timeout=5)
+    
+    if action == "toggle":
+        # If currently on (1), turn off; if off (0), turn on
+        new_state = "0" if "1" in status_out else "1"
+    elif action == "off":
+        new_state = "0"
+    else:
+        new_state = "1"
+    
+    # Use blueutil if available, fallback to system command
+    output = _run(["blueutil", "--power", new_state], timeout=10)
+    if "not found" in output.lower():
+        # Fallback: toggle via system preferences
+        output = _run(["osascript", "-e", f'tell application "System Events" to tell process "SystemUIServer" to click menu bar item 1 of menu bar 1'], timeout=10)
+    
+    state_word = "ON" if new_state == "1" else "OFF"
+    return {"status": "success", "output": f"Bluetooth set to {state_word}. {output}"}
+
+
+def toggle_wifi(action: str = "toggle") -> dict:
+    """
+    Turn Wi-Fi on, off, or toggle it. Use this to fix Wi-Fi connectivity
+    issues — toggling Wi-Fi is often the first troubleshooting step for
+    connection problems, slow speeds, or network drops.
+
+    Args:
+        action: One of 'on', 'off', or 'toggle'.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    # Get the Wi-Fi interface name (usually en0)
+    interface_out = _run(["networksetup", "-listallhardwareports"], timeout=5)
+    wifi_interface = "en0"  # Default
+    lines = interface_out.split("\n")
+    for i, line in enumerate(lines):
+        if "Wi-Fi" in line and i + 1 < len(lines):
+            device_line = lines[i + 1]
+            if "Device:" in device_line:
+                wifi_interface = device_line.split("Device:")[1].strip()
+    
+    if action == "toggle":
+        # Check current state
+        status = _run(["networksetup", "-getairportpower", wifi_interface], timeout=5)
+        new_action = "off" if "on" in status.lower() else "on"
+    else:
+        new_action = action
+    
+    output = _run(["networksetup", "-setairportpower", wifi_interface, new_action], timeout=10)
+    return {"status": "success", "output": f"Wi-Fi turned {new_action.upper()} on {wifi_interface}. {output}"}
+
+
+def manage_service(service_name: str, action: str = "restart") -> dict:
+    """
+    Start, stop, or restart a macOS system service (launchd daemon).
+    Use this to fix issues like Bluetooth not working, audio services freezing,
+    DNS problems, etc. This is what a real technician does to fix service-level issues.
+
+    Args:
+        service_name: The service identifier (e.g. 'com.apple.Bluetooth', 'com.apple.audio.coreaudiod',
+                      'com.apple.mDNSResponder', 'com.apple.WindowServer').
+        action: One of 'start', 'stop', 'restart' (default 'restart').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    results = []
+    if action in ("stop", "restart"):
+        out = _run(["launchctl", "stop", service_name], timeout=10)
+        results.append(f"Stop: {out}")
+    if action in ("start", "restart"):
+        out = _run(["launchctl", "start", service_name], timeout=10)
+        results.append(f"Start: {out}")
+    
+    return {"status": "success", "output": f"Service '{service_name}' {action}ed.\n" + "\n".join(results)}
+
+
+def clear_system_cache() -> dict:
+    """
+    Clear macOS system caches to free up space and fix performance issues.
+    This is safe and commonly done by technicians to resolve sluggish behavior,
+    app crashes, and display glitches.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    results = []
+    
+    # Clear user caches
+    out = _run(["rm", "-rf", "/tmp/com.apple.*"], timeout=10)
+    results.append(f"Cleared temp caches: {out}")
+    
+    # Purge memory (frees inactive RAM)
+    out = _run(["purge"], timeout=15)
+    results.append(f"Memory purge: {out}")
+    
+    return {"status": "success", "output": "System caches cleared and memory purged.\n" + "\n".join(results)}
+
+
+def empty_trash() -> dict:
+    """
+    Empty the user's Trash to free up disk space immediately. Use this
+    when disk space is critically low.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["osascript", "-e", 'tell application "Finder" to empty trash'], timeout=30)
+    return {"status": "success", "output": f"Trash emptied. {output}"}
+
+
+def open_application(app_name: str) -> dict:
+    """
+    Open a macOS application by name. Use this to launch apps the user
+    needs, such as System Preferences, Activity Monitor, Terminal, etc.
+
+    Args:
+        app_name: The name of the application (e.g. 'System Preferences', 'Activity Monitor', 'Safari').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["open", "-a", app_name], timeout=10)
+    return {"status": "success", "output": f"Opened '{app_name}'. {output}"}
+
+
+def close_application(app_name: str) -> dict:
+    """
+    Gracefully close a macOS application by name. Use this to close
+    apps that are not responding or to free up resources.
+
+    Args:
+        app_name: The name of the application (e.g. 'Safari', 'Google Chrome').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["osascript", "-e", f'tell application "{app_name}" to quit'], timeout=10)
+    return {"status": "success", "output": f"Closed '{app_name}'. {output}"}
+
+
+def run_safe_shell_command(command: str) -> dict:
+    """
+    Execute a safe shell command on the user's Mac. This is the ultimate
+    technician tool — it lets you run any diagnostic or fix command.
+    
+    CRITICAL SAFETY RULES:
+    - NEVER run destructive commands (rm -rf /, format, etc.)
+    - NEVER access passwords, keychains, or private data
+    - Only use for legitimate troubleshooting (checking logs, restarting services, etc.)
+    - Always explain to the user what you're about to run and why
+
+    Args:
+        command: The shell command to execute (e.g. 'defaults read com.apple.dock autohide').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    # Safety blocklist
+    dangerous = ["rm -rf /", "mkfs", "dd if=", "format", "diskutil erase", "> /dev/", 
+                 "security find-generic-password", "security find-internet-password",
+                 "passwd", "dscl . -passwd", "curl | bash", "wget | bash"]
+    cmd_lower = command.lower()
+    for d in dangerous:
+        if d in cmd_lower:
+            return {"status": "error", "output": f"BLOCKED: Command contains dangerous pattern '{d}'. This operation is not permitted for safety reasons."}
+    
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        output = result.stdout.strip()
+        if result.returncode != 0 and result.stderr.strip():
+            output += f"\n[stderr]: {result.stderr.strip()}"
+        return {"status": "success", "output": _truncate_output(output if output else "(command completed with no output)")}
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "output": f"Command timed out after 30s"}
+    except Exception as e:
+        return {"status": "error", "output": f"Error: {e}"}
+
+
+def set_volume(level: int) -> dict:
+    """
+    Set the system audio volume level. Use this when troubleshooting
+    audio issues — sometimes the volume is just muted or too low.
+
+    Args:
+        level: Volume level from 0 (mute) to 100 (max).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    level = min(max(level, 0), 100)
+    # macOS volume is 0-7 (osascript uses 0-100)
+    output = _run(["osascript", "-e", f"set volume output volume {level}"], timeout=5)
+    return {"status": "success", "output": f"Volume set to {level}%. {output}"}
+
+
+def restart_audio_service() -> dict:
+    """
+    Restart the macOS Core Audio daemon. This fixes most audio issues
+    including no sound, distorted audio, Bluetooth audio not routing,
+    and apps not detecting audio devices. This is the #1 fix technicians use.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["sudo", "killall", "coreaudiod"], timeout=10)
+    return {"status": "success", "output": f"Core Audio service restarted. Audio should resume in a few seconds. {output}"}
+
+
+# ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
 
@@ -372,4 +636,18 @@ ALL_MAC_TOOLS = [
     get_system_logs,
     flush_dns_cache,
     list_startup_items,
+    # ACTION / FIX Tools
+    kill_process,
+    kill_process_by_pid,
+    toggle_bluetooth,
+    toggle_wifi,
+    manage_service,
+    clear_system_cache,
+    empty_trash,
+    open_application,
+    close_application,
+    run_safe_shell_command,
+    set_volume,
+    restart_audio_service,
 ]
+

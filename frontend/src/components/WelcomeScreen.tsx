@@ -2,9 +2,10 @@
  * WelcomeScreen — Shown when there are no messages yet
  * =====================================================
  * Hero section with capability cards and suggestion chips.
+ * Updated to reflect Nora's autonomous technician capabilities.
  */
 
-import { Eye, Ear, MessageSquare, MonitorSmartphone, Zap, DownloadCloud } from "lucide-react";
+import { Eye, Ear, MonitorSmartphone, Zap, DownloadCloud, Wrench, Cpu, Shield } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -32,21 +33,21 @@ const CAPABILITIES = [
         shadow: "shadow-sky-500/20",
     },
     {
-        icon: <MessageSquare className="h-5 w-5" />,
-        label: "Speak",
-        desc: "I reply with voice & step-by-step text instructions",
+        icon: <Wrench className="h-5 w-5" />,
+        label: "Fix",
+        desc: "I autonomously diagnose AND fix issues on your machine",
         color: "from-indigo-500 to-violet-500",
         shadow: "shadow-indigo-500/20",
     },
 ];
 
 const SUGGESTIONS = [
-    { icon: "🖥️", text: "My PC is running very slow" },
-    { icon: "📶", text: "Wi-Fi keeps disconnecting" },
-    { icon: "🔵", text: "I'm getting a Blue Screen error" },
-    { icon: "🔊", text: "No sound from my speakers" },
-    { icon: "🖨️", text: "Printer won't connect" },
-    { icon: "🔒", text: "I think I have a virus" },
+    { icon: "🔧", text: "Fix my Bluetooth — it won't connect" },
+    { icon: "📶", text: "My Wi-Fi keeps disconnecting, fix it" },
+    { icon: "🔇", text: "No sound from my speakers" },
+    { icon: "🐌", text: "My PC is slow, kill what's hogging it" },
+    { icon: "🖨️", text: "Printer is stuck, clear the queue" },
+    { icon: "💾", text: "I'm running out of disk space" },
 ];
 
 export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScreenProps) {
@@ -64,13 +65,24 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                 </div>
 
                 <div className="space-y-2 pt-1">
-                    <h2 className="text-3xl font-bold tracking-tight gradient-text">
+                    <h2 className="text-3xl font-bold tracking-tight gradient-text-premium">
                         Nora — AI Live Technician
                     </h2>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                        Speak, type, or share a screenshot — I'll guide you through
-                        step-by-step solutions in real time.
+                        I don't just diagnose — I <strong className="text-sky-400">autonomously fix</strong> your 
+                        computer. Tell me the problem and watch me work.
                     </p>
+                    <div className="flex items-center justify-center gap-4 mt-3">
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/70">
+                            <Shield className="w-3 h-3" /> Diagnose
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-sky-400/70">
+                            <Wrench className="w-3 h-3" /> Fix
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-violet-400/70">
+                            <Cpu className="w-3 h-3" /> Control
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -79,7 +91,8 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                 {CAPABILITIES.map((cap, i) => (
                     <div
                         key={i}
-                        className="flex-1 glass-card p-4 text-center space-y-2.5 hover:border-white/10 transition-all duration-300 group"
+                        className="flex-1 glass-card-premium p-4 text-center space-y-2.5 hover:border-white/10 transition-all duration-300 group"
+                        style={{ animationDelay: `${i * 100}ms` }}
                     >
                         <div
                             className={`h-11 w-11 rounded-xl bg-gradient-to-br ${cap.color} flex items-center justify-center mx-auto text-white shadow-lg ${cap.shadow} group-hover:scale-110 transition-transform duration-300`}
@@ -102,7 +115,7 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
             {isConnected ? (
                 <div className="w-full max-w-md space-y-3">
                     <p className="text-center text-[11px] text-muted-foreground uppercase tracking-widest font-medium">
-                        Try asking
+                        Tell me what to fix
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                         {SUGGESTIONS.map((s, i) => (
@@ -144,8 +157,8 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                             <DownloadCloud className="h-4 w-4" />
                             Diagnostic Daemon
                         </div>
-                        <p className="text-[11px] text-muted-foreground max-w-[250px] text-center leading-snug">
-                            To allow Nora to run secure diagnostic tests on your machine, download and run the appropriate daemon.
+                        <p className="text-[11px] text-muted-foreground max-w-[280px] text-center leading-snug">
+                            Nora needs a lightweight daemon running on your machine to diagnose <strong>and fix</strong> issues remotely and securely.
                         </p>
                         <div className="flex gap-2">
                             <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">

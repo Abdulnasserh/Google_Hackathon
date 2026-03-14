@@ -9,12 +9,17 @@ import {
     ArrowUpRight,
     MonitorUp,
     ImagePlus,
-    Download
+    Download,
+    Shield,
+    Cpu,
+    Wrench
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { Orb } from "@/components/ui/orb";
+import { ParticleField } from "@/components/ParticleField";
+import { DaemonStatusOverlay } from "@/components/DaemonStatusOverlay";
 
 export function ChatInterface() {
     const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
@@ -131,7 +136,11 @@ export function ChatInterface() {
     // View: HOME DASHBOARD (Idle)
     if (!isListening && inputMode === "voice") {
         return (
-            <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] to-[#040406] font-sans selection:bg-sky-500/30 overflow-hidden">
+            <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] via-[#060610] to-[#040406] font-sans selection:bg-sky-500/30 overflow-hidden relative">
+                {/* Cinematic particle background */}
+                <ParticleField particleCount={50} />
+                {/* Daemon connection ceremony overlay */}
+                <DaemonStatusOverlay daemonConnected={daemonConnected} sessionId={sessionId} />
                 {/* Top App Bar */}
                 <div className="flex justify-between items-center px-8 pt-10 pb-4 max-w-5xl mx-auto w-full">
                     <div className="flex flex-col leading-tight">
@@ -180,9 +189,23 @@ export function ChatInterface() {
                         className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group z-10"
                         onClick={handleMicTap}
                     >
-                        <span className="text-sky-100/50 text-xs mb-2 tracking-widest uppercase font-medium">System Diagnostic</span>
-                        <span className="text-2xl font-light group-hover:text-sky-300 transition-colors">Tap to Connect</span>
-                        <div className="mt-8 text-white/30 group-hover:text-white/80 transition-all group-hover:scale-110">
+                        <span className="text-sky-100/50 text-xs mb-2 tracking-widest uppercase font-medium">Autonomous Technician</span>
+                        <span className="text-2xl font-light group-hover:text-sky-300 transition-colors gradient-text-premium">Tap to Connect</span>
+                        <div className="flex items-center gap-3 mt-4">
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                                <Shield className="w-3 h-3 text-emerald-400" />
+                                <span className="text-[10px] text-white/40">Diagnose</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                                <Wrench className="w-3 h-3 text-sky-400" />
+                                <span className="text-[10px] text-white/40">Fix</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                                <Cpu className="w-3 h-3 text-violet-400" />
+                                <span className="text-[10px] text-white/40">Control</span>
+                            </div>
+                        </div>
+                        <div className="mt-6 text-white/30 group-hover:text-white/80 transition-all group-hover:scale-110">
                             <Mic className="w-6 h-6" />
                         </div>
                     </div>
@@ -201,9 +224,15 @@ export function ChatInterface() {
                 <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 pb-28 px-6">
                     {/* Suggested Queries */}
                     <div className="w-full overflow-x-auto hide-scrollbar flex gap-3 snap-x justify-center">
-                        {["Run full system scan", "Why is my fan loud?", "Check network speed", "Fix audio issues"].map((q, i) => (
-                            <div key={i} className="whitespace-nowrap snap-center bg-white/[0.03] border border-white/[0.05] rounded-xl px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 backdrop-blur-sm" onClick={() => { setTextInput(q); setInputMode("text"); }}>
-                                {q}
+                        {[
+                            { icon: "🔧", text: "Fix my Bluetooth" },
+                            { icon: "🔇", text: "No sound from speakers" },
+                            { icon: "📶", text: "Fix my Wi-Fi connection" },
+                            { icon: "🐌", text: "My PC is running slow, fix it" },
+                        ].map((q, i) => (
+                            <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 flex items-center gap-2.5" onClick={() => { setTextInput(q.text); setInputMode("text"); }}>
+                                <span>{q.icon}</span>
+                                <span>{q.text}</span>
                             </div>
                         ))}
                     </div>
@@ -244,7 +273,11 @@ export function ChatInterface() {
 
     // View: LISTENING / TEXT CHAT / ACTIVE
     return (
-        <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] to-[#040406] font-sans overflow-hidden selection:bg-sky-500/30">
+        <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] via-[#060610] to-[#040406] font-sans overflow-hidden selection:bg-sky-500/30 relative">
+            {/* Cinematic particle background */}
+            <ParticleField particleCount={30} />
+            {/* Daemon connection ceremony overlay */}
+            <DaemonStatusOverlay daemonConnected={daemonConnected} sessionId={sessionId} />
             {/* Top App Bar */}
             <div className="flex justify-between items-center px-6 pt-10 pb-4 z-20 max-w-5xl mx-auto w-full">
                 <button

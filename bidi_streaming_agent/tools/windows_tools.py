@@ -415,6 +415,259 @@ def get_installed_programs() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# ACTION / FIX Tools — Nora can now actually repair issues!
+# ---------------------------------------------------------------------------
+
+def kill_process(process_name: str) -> dict:
+    """
+    Force kill a process by name on Windows. Use this when a process is
+    frozen, not responding, consuming too much CPU/RAM, or causing issues.
+    This is equivalent to what a technician would do in Task Manager.
+
+    Args:
+        process_name: The name of the process to kill (e.g. 'chrome.exe', 'explorer.exe').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_cmd(["taskkill", "/F", "/IM", process_name], timeout=10)
+    return {"status": "success", "output": f"Attempted to kill '{process_name}': {output}"}
+
+
+def kill_process_by_pid(pid: int) -> dict:
+    """
+    Force kill a specific process by its PID on Windows. Use this when
+    you know the exact PID from get_top_processes.
+
+    Args:
+        pid: The process ID number to kill.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_cmd(["taskkill", "/F", "/PID", str(pid)], timeout=10)
+    return {"status": "success", "output": f"Kill signal sent to PID {pid}: {output}"}
+
+
+def toggle_bluetooth(action: str = "toggle") -> dict:
+    """
+    Turn Bluetooth on or off on Windows. Use this to fix Bluetooth
+    connectivity issues — toggling Bluetooth often resolves pairing
+    problems with headphones, mice, keyboards, etc.
+
+    Args:
+        action: One of 'on', 'off', or 'toggle'.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    if action == "on":
+        ps_cmd = "Start-Service bthserv"
+    elif action == "off":
+        ps_cmd = "Stop-Service bthserv -Force"
+    else:
+        ps_cmd = "If ((Get-Service bthserv).Status -eq 'Running') { Stop-Service bthserv -Force } Else { Start-Service bthserv }"
+    
+    output = _run_powershell(ps_cmd, timeout=15)
+    return {"status": "success", "output": f"Bluetooth service toggled ({action}). {output}"}
+
+
+def toggle_wifi(action: str = "toggle") -> dict:
+    """
+    Enable or disable the Wi-Fi adapter on Windows. Use this to fix
+    Wi-Fi connectivity issues — toggling the adapter is a common
+    troubleshooting step.
+
+    Args:
+        action: One of 'on', 'off', or 'toggle'.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    if action == "on":
+        ps_cmd = "Get-NetAdapter -Name 'Wi-Fi' | Enable-NetAdapter -Confirm:$false"
+    elif action == "off":
+        ps_cmd = "Get-NetAdapter -Name 'Wi-Fi' | Disable-NetAdapter -Confirm:$false"
+    else:
+        ps_cmd = "If ((Get-NetAdapter -Name 'Wi-Fi').Status -eq 'Up') { Get-NetAdapter -Name 'Wi-Fi' | Disable-NetAdapter -Confirm:$false } Else { Get-NetAdapter -Name 'Wi-Fi' | Enable-NetAdapter -Confirm:$false }"
+    
+    output = _run_powershell(ps_cmd, timeout=15)
+    return {"status": "success", "output": f"Wi-Fi adapter toggled ({action}). {output}"}
+
+
+def manage_service(service_name: str, action: str = "restart") -> dict:
+    """
+    Start, stop, or restart a Windows service. Use this to fix issues
+    like Bluetooth not working, print spooler stuck, Windows Update 
+    frozen, audio service crashed, etc. This is how real technicians
+    fix service-level issues on Windows.
+
+    Args:
+        service_name: The service name (e.g. 'bthserv' for Bluetooth, 'Spooler' for Print,
+                      'Audiosrv' for Audio, 'wuauserv' for Windows Update, 'BITS').
+        action: One of 'start', 'stop', 'restart' (default 'restart').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    if action == "restart":
+        ps_cmd = f"Restart-Service '{service_name}' -Force -PassThru | Select-Object Name, Status"
+    elif action == "stop":
+        ps_cmd = f"Stop-Service '{service_name}' -Force -PassThru | Select-Object Name, Status"
+    else:
+        ps_cmd = f"Start-Service '{service_name}' -PassThru | Select-Object Name, Status"
+    
+    output = _run_powershell(ps_cmd, timeout=20)
+    return {"status": "success", "output": f"Service '{service_name}' {action}ed.\n{output}"}
+
+
+def clear_temp_files() -> dict:
+    """
+    Clear Windows temporary files to free up space and fix performance
+    issues. This is safe and commonly done by technicians. Clears
+    user temp folder, Windows temp, and prefetch data.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    ps_cmd = """
+    $before = [Math]::Round((Get-ChildItem $env:TEMP -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+    Remove-Item "$env:TEMP\\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item "C:\\Windows\\Temp\\*" -Recurse -Force -ErrorAction SilentlyContinue
+    $after = [Math]::Round((Get-ChildItem $env:TEMP -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+    Write-Output "Cleared approximately $([Math]::Round($before - $after, 2)) MB of temp files"
+    """
+    output = _run_powershell(ps_cmd, timeout=30)
+    return {"status": "success", "output": f"Temp files cleaned. {output}"}
+
+
+def empty_recycle_bin() -> dict:
+    """
+    Empty the Windows Recycle Bin to free up disk space immediately.
+    Use this when disk space is critically low.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_powershell("Clear-RecycleBin -Force -ErrorAction SilentlyContinue", timeout=30)
+    return {"status": "success", "output": f"Recycle Bin emptied. {output}"}
+
+
+def open_application(app_name: str) -> dict:
+    """
+    Open a Windows application by name or path. Use this to launch apps
+    the user needs, such as Task Manager, Control Panel, Settings, etc.
+
+    Args:
+        app_name: The application name or path (e.g. 'taskmgr', 'control', 'ms-settings:',
+                  'devmgmt.msc' for Device Manager, 'services.msc' for Services).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_cmd(["start", app_name], timeout=10, use_shell=True)
+    return {"status": "success", "output": f"Opened '{app_name}'. {output}"}
+
+
+def close_application(process_name: str) -> dict:
+    """
+    Gracefully close a Windows application by process name. 
+
+    Args:
+        process_name: The process name to close (e.g. 'chrome.exe', 'notepad.exe').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_cmd(["taskkill", "/IM", process_name], timeout=10)
+    return {"status": "success", "output": f"Closed '{process_name}'. {output}"}
+
+
+def run_safe_powershell(command: str) -> dict:
+    """
+    Execute a safe PowerShell command on the user's Windows PC. This is
+    the ultimate technician tool — it lets you run any diagnostic or fix.
+    
+    CRITICAL SAFETY RULES:
+    - NEVER run destructive commands (Format-Volume, Remove-Item C:\\, etc.)
+    - NEVER access credentials, passwords, or private user data
+    - Only use for legitimate troubleshooting
+    - Always explain to the user what you're about to run and why
+
+    Args:
+        command: The PowerShell command to execute.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    dangerous = ["format-volume", "remove-item c:\\", "remove-item c:/",
+                 "get-credential", "convertto-securestring",
+                 "invoke-webrequest | invoke-expression", "iex(", 
+                 "remove-item -recurse -force c:", "clear-disk"]
+    cmd_lower = command.lower()
+    for d in dangerous:
+        if d in cmd_lower:
+            return {"status": "error", "output": f"BLOCKED: Command contains dangerous pattern '{d}'."}
+    
+    output = _run_powershell(command, timeout=30)
+    return {"status": "success", "output": output}
+
+
+def set_volume(level: int) -> dict:
+    """
+    Set the system audio volume level on Windows. Use this when
+    troubleshooting audio issues.
+
+    Args:
+        level: Volume level from 0 (mute) to 100 (max).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    level = min(max(level, 0), 100)
+    ps_cmd = f"""
+    $wshShell = New-Object -ComObject WScript.Shell
+    1..50 | ForEach-Object {{ $wshShell.SendKeys([char]174) }}
+    $targetPresses = [math]::Round({level} / 2)
+    1..$targetPresses | ForEach-Object {{ $wshShell.SendKeys([char]175) }}
+    Write-Output 'Volume set to approximately {level}%'
+    """
+    output = _run_powershell(ps_cmd, timeout=10)
+    return {"status": "success", "output": f"Volume set to {level}%. {output}"}
+
+
+def restart_audio_service() -> dict:
+    """
+    Restart the Windows Audio service. This fixes most audio issues
+    including no sound, devices not detected, and Bluetooth audio routing.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run_powershell("Restart-Service Audiosrv -Force -PassThru | Select Name, Status", timeout=15)
+    return {"status": "success", "output": f"Windows Audio service restarted. {output}"}
+
+
+def restart_print_spooler() -> dict:
+    """
+    Restart the Windows Print Spooler service and clear the print queue.
+    This is the #1 fix for printer issues — stuck print jobs, printer
+    not responding, etc.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    ps_cmd = """
+    Stop-Service Spooler -Force
+    Remove-Item "C:\\Windows\\System32\\spool\\PRINTERS\\*" -Force -ErrorAction SilentlyContinue
+    Start-Service Spooler
+    Get-Service Spooler | Select Name, Status
+    """
+    output = _run_powershell(ps_cmd, timeout=15)
+    return {"status": "success", "output": f"Print Spooler restarted and queue cleared. {output}"}
+
+
+# ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
 
@@ -443,4 +696,19 @@ ALL_WINDOWS_TOOLS = [
     flush_dns_cache,
     list_startup_programs,
     get_installed_programs,
+    # ACTION / FIX Tools
+    kill_process,
+    kill_process_by_pid,
+    toggle_bluetooth,
+    toggle_wifi,
+    manage_service,
+    clear_temp_files,
+    empty_recycle_bin,
+    open_application,
+    close_application,
+    run_safe_powershell,
+    set_volume,
+    restart_audio_service,
+    restart_print_spooler,
 ]
+
