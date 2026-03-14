@@ -8,3 +8,9 @@ build/
 .next/
 .adk/
 openclaw-main/
+
+# PyInstaller output
+build/
+dist/
+*.spec
+client_dist/
