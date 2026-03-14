@@ -367,6 +367,18 @@ async def websocket_endpoint(
                                 live_request_queue.send_realtime(image_blob)
                                 logger.info("[UPSTREAM] Image received")
 
+                            elif msg_type == "interrupt":
+                                # User explicitly clicked the UI to mute the agent mid-sentence.
+                                # Send a turn_complete signal to explicitly tell Gemini to stop generating
+                                try:
+                                    logger.info("[UPSTREAM] UI Interrupt Signal Received")
+                                    # Create client content mapping matching the underlying ADK requirements
+                                    live_request_queue.send(
+                                        {"client_content": {"turn_complete": True}}
+                                    )
+                                except Exception as ei:
+                                    logger.warning(f"Could not forward interrupt: {ei}")
+
                         except json.JSONDecodeError:
                             # Treat as plain text if not valid JSON
                             content = types.Content(

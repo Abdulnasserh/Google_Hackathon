@@ -723,6 +723,11 @@ export function useWebSocket() {
                     : m
             )
         );
+
+        // 4. Send explicit interrupt signal to backend
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: "interrupt" }));
+        }
     }, []);
 
     // -----------------------------------------------------------------------
