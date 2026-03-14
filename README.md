@@ -22,7 +22,7 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 | 👂 **Hear** | Real-time voice streaming at 16kHz PCM. The user can speak naturally, and the agent listens continuously. |
 | 🗣️ **Speak** | The agent responds with natural, sub-second latency voice (24kHz PCM) powered by Gemini 2.5 Flash Native Audio. |
 | 👁️ **See** | Users can share their screen, drag-and-drop images, or upload screenshots. The agent reads error codes, BSOD screens, and UI elements to provide visual context. |
-| 🛠️ **Act (OpenClaw Architecture)** | Nora uses a **persistent, stateful Pseudo-Terminal (PTY)** living on the user's host machine. Instead of relying purely on hardcoded scripts, she synthesizes and streams raw bash/PowerShell commands in real-time, allowing her to solve *any* problem interactively. |
+| 🛠️ **Act (Live Command Engine)** | Nora uses a **persistent, stateful command shell** living on the user's host machine. Instead of relying purely on hardcoded scripts, she synthesizes and streams raw bash/PowerShell commands in real-time, allowing her to solve *any* problem interactively. |
 | 🛑 **Graceful Interruption** | A core hackathon requirement: users can interrupt the agent mid-sentence simply by speaking over it or clicking the mic. The system instantly clears audio buffers and coordinates backend cancellation events to handle the interruption smoothly. |
 
 ---
@@ -48,7 +48,7 @@ The application consists of a **React frontend**, a **FastAPI WebSocket backend*
 │                        │       ▲                                         │
 │  ┌─────────────────────▼───────┴──────────┐                              │
 │  │             Root Agent (Nora)             │                           │
-│  │     Instructed in "OpenClaw Mode"         │                           │
+│  │     Instructed in "Autonomous Mode"       │                           │
 │  └─────────────────────┬───────────────────┘                             │
 └────────────────────────┼─────────────────────────────────────────────────┘
                          │ WebSocket (Secure Command Tunnel)
@@ -71,7 +71,7 @@ The application consists of a **React frontend**, a **FastAPI WebSocket backend*
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. OpenClaw Dynamic PTY Execution Architecture
+### 1. Persistent Autonomous Execution Architecture
 The crown jewel of Nora is her **Agentic execution architecture**. We moved beyond simple hardcoded diagnostic scripts. The AI is essentially a "ghost in the machine":
 - **Stateful Terminals:** The client daemon spawns a real, persistent `powershell.exe` or `/bin/bash` session. Directory changes (`cd`) and variables carry over between commands.
 - **Interactive Prompts:** If a process asks *"Are you sure? [y/N]"*, the backend does not hang. Nora reads the standard output stream, generates the answer `"y"`, and pushes it to standard input dynamically.

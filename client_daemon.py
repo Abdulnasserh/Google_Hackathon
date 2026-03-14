@@ -178,7 +178,7 @@ def main():
     print(f"              ░     ░ ░     ░           ░  {UI.RESET}")
     print(f"\n     {UI.BOLD}NORA AI TECHNICIAN — LOCAL HOST DAEMON{UI.RESET}")
     print(f"     {UI.DIM}Terminal Control & Diagnostic Override Tool{UI.RESET}\n")
-    print("  [✓] OpenClaw PTY Engine: Loaded")
+    print("  [✓] Live Command Engine: Loaded")
     print("  [✓] Process Manager: Loaded")
     print("  [✓] Network Access: Granted\n")
     
