@@ -147,12 +147,15 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                         <p className="text-[11px] text-muted-foreground max-w-[250px] text-center leading-snug">
                             To allow Nora to run secure diagnostic tests on your machine, download and run the appropriate daemon.
                         </p>
-                        <div className="flex gap-4">
-                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/23094548351" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
-                                Windows (.exe)
+                        <div className="flex gap-2">
+                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
+                                Windows
                             </a>
-                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/23094548351" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
-                                macOS
+                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
+                                Mac (Intel)
+                            </a>
+                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
+                                Mac (Apple Silicon)
                             </a>
                         </div>
                     </div>
