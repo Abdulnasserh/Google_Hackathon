@@ -36,6 +36,7 @@ export function ChatInterface() {
         interruptAgent,
         toggleScreenShare,
         isScreenSharing,
+        daemonConnected,
         sessionId,
     } = useWebSocket();
 
@@ -60,8 +61,11 @@ export function ChatInterface() {
 
     const { isRecording, startRecording, stopRecording } = useAudioRecorder(sendAudioWithInterrupt);
 
-    const isConnected = status === "connected" || status === "connecting";
-    const isListening = isRecording || isConnected;
+    // REAL CONNECTION STATUS: We consider it 'connected' if the voice/text bridge is up 
+    // AND the local daemon is paired.
+    const isVoiceConnected = status === "connected" || status === "connecting";
+    const isConnected = isVoiceConnected && daemonConnected;
+    const isListening = isRecording || isVoiceConnected;
 
     // Real date for the UI
     const now = new Date();
@@ -289,7 +293,12 @@ export function ChatInterface() {
                                     </div>
                                     <span className="text-[11px] font-semibold text-sky-100/70 tracking-widest uppercase">Live Activity</span>
                                 </div>
-                                <span className="text-[10px] text-white/30 font-mono">MCP_LINK</span>
+                                <div className="flex items-center gap-1.5">
+                                    <div className={`w-1 h-1 rounded-full ${daemonConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                    <span className={`text-[10px] font-mono ${daemonConnected ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                                        {daemonConnected ? 'DAEMON_LINKED' : 'DAEMON_OFFLINE'}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Log Items */}

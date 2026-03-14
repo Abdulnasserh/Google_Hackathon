@@ -56,6 +56,20 @@ from bidi_streaming_agent.tools.windows_tools import ALL_WINDOWS_TOOLS
 
 connected_daemons: dict[str, WebSocket] = {}
 daemon_responses: dict[str, asyncio.Future] = {}
+daemon_listeners: dict[str, list[WebSocket]] = {}
+
+async def notify_daemon_status(session_id: str, status: str):
+    """Notifies all browser listeners for a session that the daemon status has changed."""
+    if session_id in daemon_listeners:
+        msg = json.dumps({"type": "daemon_status", "status": status})
+        disconnected = []
+        for ws in daemon_listeners[session_id]:
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                disconnected.append(ws)
+        for ws in disconnected:
+            daemon_listeners[session_id].remove(ws)
 
 def build_remote_tools_for_session(session_id: str):
     unique_tool_names = set()
@@ -167,6 +181,9 @@ async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
     logger.info(f"[DAEMON] Connected for session: {session_id}")
     connected_daemons[session_id] = websocket
     
+    # Notify any browser listeners that a daemon just connected
+    await notify_daemon_status(session_id, "connected")
+    
     try:
         while True:
             message = await websocket.receive_text()
@@ -189,6 +206,28 @@ async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
         logger.error(f"[DAEMON] Error: {e}")
     finally:
         connected_daemons.pop(session_id, None)
+        # Notify any browser listeners that the daemon disconnected
+        await notify_daemon_status(session_id, "disconnected")
+
+@app.websocket("/ws/status/{session_id}")
+async def status_websocket_endpoint(websocket: WebSocket, session_id: str):
+    await websocket.accept()
+    if session_id not in daemon_listeners:
+        daemon_listeners[session_id] = []
+    daemon_listeners[session_id].append(websocket)
+    
+    # Send initial status
+    initial_status = "connected" if session_id in connected_daemons else "disconnected"
+    await websocket.send_text(json.dumps({"type": "daemon_status", "status": initial_status}))
+    
+    try:
+        while True:
+            await websocket.receive_text() # Keep alive
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if session_id in daemon_listeners:
+            daemon_listeners[session_id].remove(websocket)
 
 
 # =========================================================================

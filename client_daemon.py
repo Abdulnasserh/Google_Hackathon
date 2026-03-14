@@ -75,11 +75,19 @@ def main():
         print("Session ID is required. Exiting.")
         return
 
-    # For local testing, default to localhost. In prod, this would be hardcoded to the Cloud Run URL.
     default_url = "ws://localhost:8000"
     url = input(f"Enter backend URL (default {default_url}): ").strip()
     if not url:
         url = default_url
+    
+    # Auto-sanitize URL for common user mistakes (e.g. pasting http instead of ws)
+    if url.startswith("https://"):
+        url = url.replace("https://", "wss://", 1)
+    elif url.startswith("http://"):
+        url = url.replace("http://", "ws://", 1)
+    
+    # Remove trailing slash which breaks concatenation
+    url = url.rstrip("/")
 
     try:
         asyncio.run(daemon_loop(url, session_id))

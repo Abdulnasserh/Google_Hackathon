@@ -23,6 +23,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,8 +82,10 @@ export function useWebSocket() {
     const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
     const [currentTranscription, setCurrentTranscription] = useState("");
     const [activities, setActivities] = useState<ToolCallActivity[]>([]);
+    const [daemonConnected, setDaemonConnected] = useState(false);
 
     const wsRef = useRef<WebSocket | null>(null);
+    const statusWsRef = useRef<WebSocket | null>(null);
     const partialTextRef = useRef("");
     const userIdRef = useRef(`user-${crypto.randomUUID().slice(0, 8)}`);
     const sessionIdRef = useRef(`session-${crypto.randomUUID().slice(0, 8)}`);
@@ -722,6 +725,50 @@ export function useWebSocket() {
     // -----------------------------------------------------------------------
     // Cleanup on unmount
     // -----------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Daemon Status Connection (Persistent)
+    // -----------------------------------------------------------------------
+    useEffect(() => {
+        let isUnmounted = false;
+        
+        const connectStatus = () => {
+            if (isUnmounted) return;
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${protocol}//${window.location.host}/ws/status/${sessionIdRef.current}`;
+            const ws = new WebSocket(wsUrl);
+            statusWsRef.current = ws;
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "daemon_status") {
+                        setDaemonConnected(data.status === "connected");
+                        if (data.status === "connected") {
+                            toast.success("Nora has paired with your local daemon", { duration: 3000 });
+                        } else if (data.status === "disconnected") {
+                            // Don't toast on initial idle, only if we were connected
+                            setDaemonConnected(false);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to parse status message", e);
+                }
+            };
+
+            ws.onclose = () => {
+                if (!isUnmounted) {
+                    setTimeout(connectStatus, 3000); // Reconnect status pipe
+                }
+            };
+        };
+
+        connectStatus();
+        return () => {
+            isUnmounted = true;
+            statusWsRef.current?.close();
+        };
+    }, []);
+
     useEffect(() => {
         return () => {
             intentionalDisconnectRef.current = true;
@@ -744,6 +791,7 @@ export function useWebSocket() {
         interruptAgent,
         toggleScreenShare,
         isScreenSharing,
+        daemonConnected,
         sessionId: sessionIdRef.current,
     };
 }
