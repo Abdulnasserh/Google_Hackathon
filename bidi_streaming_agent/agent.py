@@ -35,42 +35,15 @@ import platform
 from google.adk.agents import Agent
 from google.adk.tools import google_search
 
-from bidi_streaming_agent.mcp_client_bridge import create_mcp_bridge_tools
-
 # ---------------------------------------------------------------------------
-# Auto-detect the host operating system at startup
+# We no longer load tools locally!
+# They are dynamically generated per-session in app/main.py
+# and executed via the Client Daemon websocket.
 # ---------------------------------------------------------------------------
-_os_name = platform.system()  # 'Darwin' (macOS), 'Windows', or 'Linux'
+print(f"[Agent] Configured for Remote Daemon execution. Awaiting client connections.")
 
-if _os_name == "Darwin":
-    _mac_ver = platform.mac_ver()[0]  # e.g. '14.3.1'
-    DETECTED_OS = "macOS"
-    DETECTED_OS_DETAIL = f"macOS {_mac_ver}" if _mac_ver else "macOS"
-    MCP_SERVER_SCRIPT = "bidi_streaming_agent/mcp_servers/mac_mcp_server.py"
-
-elif _os_name == "Windows":
-    _win_ver = platform.version()  # e.g. '10.0.22631'
-    DETECTED_OS = "Windows"
-    DETECTED_OS_DETAIL = f"Windows (version {_win_ver})" if _win_ver else "Windows"
-    MCP_SERVER_SCRIPT = "bidi_streaming_agent/mcp_servers/windows_mcp_server.py"
-
-else:
-    DETECTED_OS = _os_name or "Unknown"
-    DETECTED_OS_DETAIL = f"{_os_name} ({platform.version()})"
-    # Fallback to macOS tools (closest for Linux/Unix systems)
-    MCP_SERVER_SCRIPT = "bidi_streaming_agent/mcp_servers/mac_mcp_server.py"
-
-# ---------------------------------------------------------------------------
-# Connect to MCP Server and fetch tools dynamically
-# ---------------------------------------------------------------------------
-print(f"[Agent] Detected OS: {DETECTED_OS_DETAIL}")
-print(f"[Agent] Connecting to MCP Server: {MCP_SERVER_SCRIPT}")
-
-_mcp_tools = create_mcp_bridge_tools(MCP_SERVER_SCRIPT)
-print(f"[Agent] Loaded {len(_mcp_tools)} tools from MCP server")
-
-# Combine google_search with MCP tools
-_all_tools = [google_search] + _mcp_tools
+# We only define google_search here as a fallback
+_all_tools = [google_search]
 
 # ---------------------------------------------------------------------------
 # PC Technician Root Agent Instruction Prompt
@@ -81,13 +54,11 @@ users diagnose and fix computer problems through a friendly, step-by-step
 conversational experience.
 
 ## DETECTED OPERATING SYSTEM
-The user's computer has been **automatically detected** as running:
-> **{DETECTED_OS_DETAIL}**
+The user's computer OS is dynamically detected when they connect their Client Daemon.
+If you need to know their OS or hardware, run the appropriate tools!
 
-You already know the OS — **do NOT ask the user which operating system they
-are using.** You have direct access to CLI diagnostic tools for {DETECTED_OS}
-that you can call at any time. These tools are served via an MCP server
-and are executed securely on the user's machine.
+You have direct access to CLI diagnostic tools that you can call at any time. 
+These tools are executed securely on the user's local machine via the remote diagnostic daemon.
 
 ## Your Personality
 - Warm, patient, and encouraging — like a knowledgeable friend who happens
@@ -107,9 +78,8 @@ You can **See, Hear, and Speak**:
 - 🗣️ **Speak**: You respond with natural voice and clear instructions.
 
 ## Your Diagnostic Tools
-You have real CLI tools that run directly on the user's {DETECTED_OS} machine
-via an MCP (Model Context Protocol) server. Use them proactively whenever
-diagnostics would help. Here's what you can do:
+You have real CLI tools that run directly on the user's machine via the connected remote daemon.
+Use them proactively whenever diagnostics would help. Here's what you can do:
 
 ### Network Diagnostics
 - **ping_host** — Check connectivity to any host (e.g. google.com, 8.8.8.8)
@@ -194,9 +164,8 @@ root_agent = Agent(
     name="pc_technician_agent",
     description=(
         "An expert AI PC technician that helps users troubleshoot and fix "
-        "computer problems through voice or text conversation. Automatically "
-        f"detects the user's OS ({DETECTED_OS}) and connects to the appropriate "
-        "MCP server for CLI diagnostic tools."
+        "computer problems through voice or text conversation. Remotely "
+        "executes secure diagnostic CLI tools via a downloaded client daemon."
     ),
     instruction=PC_TECHNICIAN_INSTRUCTION,
     tools=_all_tools,

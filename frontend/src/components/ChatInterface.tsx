@@ -35,6 +35,7 @@ export function ChatInterface() {
         interruptAgent,
         toggleScreenShare,
         isScreenSharing,
+        sessionId,
     } = useWebSocket();
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +145,7 @@ export function ChatInterface() {
                                     <span className="w-1.5 h-1.5 rounded-full bg-white/30"></span> Offline / Idle
                                 </span>
                             )}
+                            <div className="mt-1 text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</div>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 p-[2px] shadow-[0_0_15px_rgba(56,189,248,0.3)]">
                             <div className="h-full w-full rounded-full bg-[#0a0a0f] overflow-hidden flex items-center justify-center">

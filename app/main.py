@@ -41,14 +41,65 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.agents.live_request_queue import LiveRequestQueue
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-# Import our PC Technician agent
+# Import our PC Technician agent base config
 from bidi_streaming_agent.agent import root_agent
+import inspect
+from bidi_streaming_agent.tools.mac_tools import ALL_MAC_TOOLS
+from bidi_streaming_agent.tools.windows_tools import ALL_WINDOWS_TOOLS
+
+connected_daemons: dict[str, WebSocket] = {}
+daemon_responses: dict[str, asyncio.Future] = {}
+
+def build_remote_tools_for_session(session_id: str):
+    unique_tool_names = set()
+    all_tools = []
+    # Collect all unique tools across Mac and Windows
+    for t in ALL_MAC_TOOLS + ALL_WINDOWS_TOOLS:
+        if t.__name__ not in unique_tool_names:
+            unique_tool_names.add(t.__name__)
+            all_tools.append(t)
+            
+    remote_tools = []
+    for tool in all_tools:
+        sig = inspect.signature(tool)
+        name = tool.__name__
+        doc = tool.__doc__
+        
+        async def remote_wrapper(_name=name, **kwargs):
+            if session_id not in connected_daemons:
+                return f"Error: Diagnostic daemon is not connected for session {session_id}. Tell the user to start the client_daemon.py script with their session ID to enable troubleshooting."
+            
+            call_id = str(uuid.uuid4())
+            future = asyncio.get_running_loop().create_future()
+            daemon_responses[call_id] = future
+            
+            ws = connected_daemons[session_id]
+            req = {"type": "tool_call", "call_id": call_id, "tool_name": _name, "args": kwargs}
+            try:
+                await ws.send_text(json.dumps(req))
+                result = await asyncio.wait_for(future, timeout=60.0)
+                return result
+            except asyncio.TimeoutError:
+                return "Error: Tool execution timed out on the client daemon."
+            except Exception as e:
+                return f"Error communicating with local daemon: {e}"
+            finally:
+                daemon_responses.pop(call_id, None)
+
+        remote_wrapper.__name__ = name
+        remote_wrapper.__doc__ = doc
+        remote_wrapper.__signature__ = sig
+        remote_tools.append(remote_wrapper)
+        
+    from google.adk.tools import google_search
+    return [google_search] + remote_tools
 
 # ---------------------------------------------------------------------------
 # Logging Configuration
@@ -100,6 +151,39 @@ async def health_check():
         "agent": root_agent.name,
         "model": root_agent.model,
     }
+
+# =========================================================================
+# Daemon WebSocket Endpoint (For Client CLI Tools)
+# =========================================================================
+
+@app.websocket("/ws/daemon/{session_id}")
+async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
+    await websocket.accept()
+    logger.info(f"[DAEMON] Connected for session: {session_id}")
+    connected_daemons[session_id] = websocket
+    
+    try:
+        while True:
+            message = await websocket.receive_text()
+            data = json.loads(message)
+            msg_type = data.get("type")
+            
+            if msg_type == "init":
+                os_sys = data.get("os", "Unknown")
+                logger.info(f"[DAEMON] Session {session_id} initialized. OS: {os_sys}")
+            elif msg_type == "tool_result":
+                call_id = data.get("call_id")
+                result_str = data.get("result", "No output")
+                future = daemon_responses.get(call_id)
+                if future and not future.done():
+                    future.set_result(result_str)
+                    
+    except WebSocketDisconnect:
+        logger.info(f"[DAEMON] Disconnected for session: {session_id}")
+    except Exception as e:
+        logger.error(f"[DAEMON] Error: {e}")
+    finally:
+        connected_daemons.pop(session_id, None)
 
 
 # =========================================================================
@@ -266,7 +350,20 @@ async def websocket_endpoint(
             - Error events
         """
         try:
-            async for event in runner.run_live(
+            # Create session agent and runner
+            session_agent = Agent(
+                model=root_agent.model,
+                name=root_agent.name,
+                instruction=root_agent.instruction,
+                tools=build_remote_tools_for_session(session_id),
+            )
+            session_runner = Runner(
+                app_name=APP_NAME,
+                agent=session_agent,
+                session_service=session_service,
+            )
+
+            async for event in session_runner.run_live(
                 user_id=user_id,
                 session_id=session_id,
                 live_request_queue=live_request_queue,

@@ -744,5 +744,6 @@ export function useWebSocket() {
         interruptAgent,
         toggleScreenShare,
         isScreenSharing,
+        sessionId: sessionIdRef.current,
     };
 }
