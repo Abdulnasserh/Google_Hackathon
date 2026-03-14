@@ -39,7 +39,7 @@ The application consists of a **React frontend**, a **FastAPI WebSocket backend*
 │  ┌──────────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │ ChatInterface│  │VoiceButton │  │Activity Log  │  │Image Upload  │  │
 │  │ Messages,    │  │ Mic toggle │  │ Live MCP     │  │ File picker, │  │
-│  │ text input   │  │ with pulse │  │ tracking UI  │  │ screen cap   │  │
+│  │ text input   │  │ with pulse │  │ tracking UI  │  │ screen capt. │  │
 │  └──────┬───────┘  └─────┬──────┘  └──────┬───────┘  └──────┬───────┘  │
 │         │                │                 │                  │          │
 │         └────────────────┼─────────────────┼──────────────────┘          │
@@ -68,14 +68,14 @@ The application consists of a **React frontend**, a **FastAPI WebSocket backend*
 │  └─────────────────────┬───────────────────┘                             │
 │                        │                                                 │
 │  ┌─────────────────────┴───────────────────┐                             │
-│  │            ADK Runner.run_live()           │                          │
-│  │         • Routes multimodal input          │                          │
-│  │         • Yields response events           │                          │
+│  │            ADK Runner.run_live()        │                             │
+│  │         • Routes multimodal input       │                             │ 
+│  │         • Yields response events        │                             │
 │  └─────────────────────┬───────────────────┘                             │
 │                        │                                                 │
 │  ┌─────────────────────▼─────────────────────────────────────────────┐   │
-│  │                      Root Agent (Nora)                             │   │
-│  │           Acts as universal MCP Tool Client                        │   │
+│  │                      Root Agent (Nora)                            │   │
+│  │           Acts as universal MCP Tool Client                       │   │
 │  └─────────────────────┬─────────────────┬───────────┬───────────────┘   │
 │                        │                 │           │                   │
 │               MCP      │        MCP      │     MCP   │                   │

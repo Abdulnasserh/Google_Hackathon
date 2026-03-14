@@ -38,6 +38,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from google.adk.runners import Runner
 from google.adk.agents.run_config import RunConfig, StreamingMode
@@ -321,6 +323,34 @@ async def websocket_endpoint(
         cancel_event.set()  # Ensure both tasks know to stop
         live_request_queue.close()
         logger.info(f"[WS] Session closed: user={user_id}, session={session_id}")
+
+
+# =========================================================================
+# Static Frontend Serving
+# =========================================================================
+
+# Path to the built frontend (dist/)
+frontend_path = Path(__file__).parent.parent / "dist"
+
+# If the dist folder exists, mount it to serve static files
+if frontend_path.exists():
+    app.mount("/assets", StaticFiles(directory=frontend_path / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Prevent intercepting the WebSocket or Health check paths
+        if full_path.startswith("ws/") or full_path == "health":
+            return None # FastAPI will continue to search routing table
+        
+        # Check if the requested file exists (e.g. logo.png, robots.txt)
+        file_path = frontend_path / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        # Otherwise, serve index.html (SPA Fallback)
+        return FileResponse(frontend_path / "index.html")
+else:
+    logger.warning("Frontend 'dist' directory not found. Static files will not be served.")
 
 
 # =========================================================================

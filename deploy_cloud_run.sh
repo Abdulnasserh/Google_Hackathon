@@ -1,21 +1,20 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_ID=$(gcloud config get-value project)
-SERVICE_NAME="ai-pc-technician-backend"
-REGION="us-central1"
+PROJECT_ID="gemini-live-hackathon-490213"
+SERVICE_NAME="google-hackathon"
+REGION="europe-west1"
 
-echo "🚀 Deploying $SERVICE_NAME to Cloud Run in $REGION..."
+echo "🚀 Deploying $SERVICE_NAME to Cloud Run in $REGION (Integrated Frontend + Backend)..."
 
-# Build and Push using Cloud Build
-gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
+# Build and Push using Cloud Build (this will use the new Multi-stage Dockerfile)
+gcloud builds submit --tag europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/google_hackathon/google-hackathon
 
 # Deploy to Cloud Run
 gcloud run deploy $SERVICE_NAME \
-  --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
+  --image europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/google_hackathon/google-hackathon \
   --platform managed \
   --region $REGION \
-  --allow-unauthenticated \
-  --set-env-vars="DEMO_AGENT_MODEL=gemini-2.5-flash-native-audio-preview-12-2025"
+  --allow-unauthenticated
 
 echo "✅ Deployment complete!"
