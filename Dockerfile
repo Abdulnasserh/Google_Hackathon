@@ -37,10 +37,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY bidi_streaming_agent/ ./bidi_streaming_agent/
 
-# Copy .env file if it exists (usually ignored in production, but helpful for CI/CD)
-# In Cloud Run, it's better to use GCP Secrets Manager for API Keys.
-COPY .env* ./ 
-
 # Expose port (Documentation only, Cloud Run ignores this and uses $PORT)
 EXPOSE 8080
 
