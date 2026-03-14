@@ -74,7 +74,12 @@ def build_remote_tools_for_session(session_id: str):
         
         async def remote_wrapper(_name=name, **kwargs):
             if session_id not in connected_daemons:
-                return f"Error: Diagnostic daemon is not connected for session {session_id}. Tell the user to start the client_daemon.py script with their session ID to enable troubleshooting."
+                return (
+                    f"Error: The user's diagnostic daemon is not connected for session {session_id}. "
+                    "You MUST tell the user to download the Diagnostic Daemon executable from the links "
+                    f"on the Welcome Screen. Tell them to run it, and when asked, paste their Daemon ID: {session_id}. "
+                    "You cannot diagnose their PC until they do this."
+                )
             
             call_id = str(uuid.uuid4())
             future = asyncio.get_running_loop().create_future()

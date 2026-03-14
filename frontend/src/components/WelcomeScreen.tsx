@@ -4,7 +4,7 @@
  * Hero section with capability cards and suggestion chips.
  */
 
-import { Eye, Ear, MessageSquare, MonitorSmartphone, Zap } from "lucide-react";
+import { Eye, Ear, MessageSquare, MonitorSmartphone, Zap, DownloadCloud } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -138,6 +138,24 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                         <Zap className="h-4 w-4" />
                         Connect Now
                     </Button>
+
+                    <div className="mt-8 flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-widest">
+                            <DownloadCloud className="h-4 w-4" />
+                            Diagnostic Daemon
+                        </div>
+                        <p className="text-[11px] text-muted-foreground max-w-[250px] text-center leading-snug">
+                            To allow Nora to run secure diagnostic tests on your machine, download and run the appropriate daemon.
+                        </p>
+                        <div className="flex gap-4">
+                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/latest" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
+                                Windows (.exe)
+                            </a>
+                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions/runs/latest" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
+                                macOS
+                            </a>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
