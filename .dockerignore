@@ -1,0 +1,16 @@
+# Docker Ignore
+**/.pyc
+**/__pycache__
+.git
+.github
+.env
+.idea
+.vscode
+venv/
+.venv/
+node_modules/
+frontend/
+*.log
+README.md
+Dockerfile
+.dockerignore
