@@ -366,6 +366,14 @@ export function ChatInterface() {
                                             )}
                                             TechMCP({activity.name})
                                         </div>
+                                        {activity.args && Object.keys(activity.args).length > 0 && (
+                                            <div className="text-[10px] font-mono text-white/50 bg-black/40 p-2 rounded ml-2 border-l border-white/10 break-all whitespace-pre-wrap">
+                                                {activity.name === 'execute_command' || activity.name === 'run_safe_shell_command' || activity.name === 'run_safe_powershell'
+                                                    ? `> ${activity.args.command || activity.args.cmd || '...'}`
+                                                    : JSON.stringify(activity.args)
+                                                }
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
 

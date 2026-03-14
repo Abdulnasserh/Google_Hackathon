@@ -22,7 +22,7 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 | 👂 **Hear** | Real-time voice streaming at 16kHz PCM. The user can speak naturally, and the agent listens continuously. |
 | 🗣️ **Speak** | The agent responds with natural, sub-second latency voice (24kHz PCM) powered by Gemini 2.5 Flash Native Audio. |
 | 👁️ **See** | Users can share their screen, drag-and-drop images, or upload screenshots. The agent reads error codes, BSOD screens, and UI elements to provide visual context. |
-| 🛠️ **Act (CLI Tools)** | The backend auto-detects the host OS and equips the agent with up to 20 OS-specific CLI tools (e.g., `ipconfig`, `system_profiler`, `sfc /scannow`). The agent runs these proactively to gather system data. |
+| 🛠️ **Act (OpenClaw Architecture)** | Nora uses a **persistent, stateful Pseudo-Terminal (PTY)** living on the user's host machine. Instead of relying purely on hardcoded scripts, she synthesizes and streams raw bash/PowerShell commands in real-time, allowing her to solve *any* problem interactively. |
 | 🛑 **Graceful Interruption** | A core hackathon requirement: users can interrupt the agent mid-sentence simply by speaking over it or clicking the mic. The system instantly clears audio buffers and coordinates backend cancellation events to handle the interruption smoothly. |
 
 ---
@@ -33,75 +33,56 @@ The application consists of a **React frontend**, a **FastAPI WebSocket backend*
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                          FRONTEND                                        │
-│                   React + Vite + Shadcn/UI                               │
-│                                                                          │
-│  ┌──────────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ ChatInterface│  │VoiceButton │  │Activity Log  │  │Image Upload  │  │
-│  │ Messages,    │  │ Mic toggle │  │ Live MCP     │  │ File picker, │  │
-│  │ text input   │  │ with pulse │  │ tracking UI  │  │ screen capt. │  │
-│  └──────┬───────┘  └─────┬──────┘  └──────┬───────┘  └──────┬───────┘  │
-│         │                │                 │                  │          │
-│         └────────────────┼─────────────────┼──────────────────┘          │
-│                          │                 │                             │
-│                ┌─────────▼─────────────────▼──┐                          │
-│                │     useWebSocket Hook         │                         │
-│                │  • Connects to WS server      │                         │
-│                │  • Sends text/audio/images    │                         │
-│                │  • Parses ADK response events │                         │
-│                │  • Plays audio                │                         │
-│                └─────────────┬─────────────────┘                         │
-└──────────────────────────────┼───────────────────────────────────────────┘
-                               │
-                        WebSocket Connection
-                        ws://localhost:8000/ws/{session}
-                        ├─ Upstream: JSON/PCM text/audio/images
-                        └─ Downstream: ADK Event objects (JSON)
-                               │
-┌──────────────────────────────┼───────────────────────────────────────────┐
-│                          BACKEND                                         │
-│                   FastAPI + Google ADK                                   │
+│                          FRONTEND (React UI)                             │
+│       Cinematic "Live Activity" Dashboard & Terminal Log Feed            │
+└──────────────────────────────┬───────────────────────────────────────────┘
+                               │ WebSocket (JSON / Audio PCM)
+┌──────────────────────────────▼───────────────────────────────────────────┐
+│                          CLOUD RUN BACKEND                               │
+│                   FastAPI + Google ADK + Gemini Flash                    │
 │                                                                          │
 │  ┌───────────────────────────▼────────────┐                              │
 │  │              WebSocket Server             │                           │
-│  │              (app/main.py)                │                           │
+│  │     Routes Bidi-streaming & Tool Calls    │                           │
 │  └─────────────────────┬───────────────────┘                             │
-│                        │                                                 │
-│  ┌─────────────────────┴───────────────────┐                             │
-│  │            ADK Runner.run_live()        │                             │
-│  │         • Routes multimodal input       │                             │ 
-│  │         • Yields response events        │                             │
+│                        │       ▲                                         │
+│  ┌─────────────────────▼───────┴──────────┐                              │
+│  │             Root Agent (Nora)             │                           │
+│  │     Instructed in "OpenClaw Mode"         │                           │
 │  └─────────────────────┬───────────────────┘                             │
-│                        │                                                 │
-│  ┌─────────────────────▼─────────────────────────────────────────────┐   │
-│  │                      Root Agent (Nora)                            │   │
-│  │           Acts as universal MCP Tool Client                       │   │
-│  └─────────────────────┬─────────────────┬───────────┬───────────────┘   │
-│                        │                 │           │                   │
-│               MCP      │        MCP      │     MCP   │                   │
-│               Protocol │        Protocol │     Proto │                   │
-│  ┌─────────────────────▼──┐ ┌────────────▼───┐ ┌─────▼──────────────┐    │
-│  │    MacTechnicianMCP    │ │WindowsTechMCP  │ │  Android Node      │    │
-│  │    (FastMCP Server)    │ │(FastMCP Server)│ │  (Soon)            │    │
-│  │    - ping, dns         │ │- sfc, ipconfig │ │  - battery, sms    │    │
-│  │    - flush_dns         │ │- event_logs    │ │  - camera.snap     │    │
-│  └────────────────────────┘ └────────────────┘ └────────────────────┘    │
+└────────────────────────┼─────────────────────────────────────────────────┘
+                         │ WebSocket (Secure Command Tunnel)
+┌────────────────────────▼─────────────────────────────────────────────────┐
+│                       LOCAL CLIENT DAEMON                                │
+│                   Running on User's PC (Mac/Win)                         │
+│                                                                          │
+│   ┌────────────────────────────────────────────────────────────────┐     │
+│   │                 TerminalSessionManager (PTY)                   │     │
+│   │                                                                │     │
+│   │  ┌──────────────┐     ┌──────────────┐      ┌──────────────┐   │     │
+│   │  │ execute_cmd()│     │ send_input() │      │ get_output() │   │     │
+│   │  │ (e.g. bash)  │ ◄─► │ (e.g. "y\n") │ ◄──► │ (stdout log) │   │     │
+│   │  └──────────────┘     └──────────────┘      └──────────────┘   │     │
+│   └──────────┬────────────────────────────────────────┬────────────┘     │
+│              │                                        │                  │
+│   ┌──────────▼────────────────┐          ┌────────────▼──────────────┐   │
+│   │  System Services / WiFi   │          │  Filesystem / Processes   │   │
+│   └───────────────────────────┘          └───────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. Modular MCP Architecture
-To support real-time bidi streaming while granting secure, modular system access, the agent's architecture uses the **Model Context Protocol (MCP)**:
+### 1. OpenClaw Dynamic PTY Execution Architecture
+The crown jewel of Nora is her **Agentic execution architecture**. We moved beyond simple hardcoded diagnostic scripts. The AI is essentially a "ghost in the machine":
+- **Stateful Terminals:** The client daemon spawns a real, persistent `powershell.exe` or `/bin/bash` session. Directory changes (`cd`) and variables carry over between commands.
+- **Interactive Prompts:** If a process asks *"Are you sure? [y/N]"*, the backend does not hang. Nora reads the standard output stream, generates the answer `"y"`, and pushes it to standard input dynamically.
+- **Unrestricted Problem Solving:** Because she can synthesize raw shell commands, she can fix issues the developers never explicitly anticipated.
+- **Safety First:** The daemon implements a rigorous blocklist preventing destructive patterns (`rm -rf /`, `format`, password scraping).
 
-1. **OS Detection:** The FastAPI server uses `platform.system()` to detect the host environment.
-2. **MCP Server Spawning:** The agent dynamically identifies the correct OS-specific FastMCP server (e.g., `mac_mcp_server.py`).
-3. **Dynamic Bridge:** Using the `MCP Client Bridge`, Nora spawns the server as a background subprocess and dynamically fetches tools over the **stdio** protocol. This makes the agent completely modular — adding support for a new platform like Linux or Android is as simple as creating a new MCP server without touching the core agent logic.
-4. **Prompt Adjustments:** The detected OS and tool capabilities are injected directly into the Gemini instruction prompt.
-
-### 2. WebSocket & Interruption Flow
-Graceful interruptions require precise coordination across the full stack:
-- **Frontend (`useWebSocket.ts`):** Wraps Web Audio API playback. When the user speaks, it triggers `interruptAgent()`, which instantly clears the audio buffer, drops partial messages, and sends an interruption signal.
-- **Backend (`main.py`):** Uses an `asyncio.Event` (`cancel_event`) shared between the upstream (receive) and downstream (send) tasks. If the client disconnects or interrupts, tasks are cleanly cancelled without hanging the server or queue.
-- **Auto-Reconnect:** Features exponential backoff for unexpected network drops, ensuring a resilient live session.
+### 2. Cinematic UX & Real-Time Feedback
+We've broken the "textbox paradigm". When the user asks Nora to fix their Bluetooth:
+- They don't just get a text reply saying "I fixed it."
+- A **Live Activity** dashboard slides in, showing a cinematic stream of the exact CLI commands Nora is executing on their machine (`> launchctl kickstart -k system/com.apple.bluetoothd`).
+- A high-fidelity "Daemon Connection Ceremony" completes the hacker-style UX when the local script pairs with the cloud.
 
 ---
 

@@ -68,6 +68,7 @@ export interface AgentEvent {
 export interface ToolCallActivity {
     id: string;
     name: string;
+    args?: Record<string, unknown>;
     timestamp: Date;
     status: 'executing' | 'completed';
 }
@@ -276,9 +277,11 @@ export function useWebSocket() {
                     // Check for function calls
                     if (part.functionCall?.name) {
                         const functionName = part.functionCall.name;
+                        const functionArgs = part.functionCall.args;
                         setActivities((prev) => [...prev, {
                             id: crypto.randomUUID(),
                             name: functionName,
+                            args: functionArgs,
                             timestamp: new Date(),
                             status: 'executing'
                         }]);
