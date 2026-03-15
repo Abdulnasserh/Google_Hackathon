@@ -4,7 +4,7 @@ Nora Personal AI Assistant — Root Agent Definition
 This module defines the root AI agent for the Nora Personal Assistant application.
 The agent:
     1. Auto-detects the user's OS (macOS or Windows) at startup
-    2. Connects to the correct MCP server (MacTechnicianMCP or WindowsTechnicianMCP)
+    2. Connects to the correct MCP server (NoraMCP)
     3. Dynamically fetches all available tools via the MCP Client Bridge
     4. Registers them with the ADK Agent so Gemini can call them
 
@@ -46,7 +46,7 @@ print(f"[Agent] Configured for Remote Daemon execution. Awaiting client connecti
 _all_tools = [google_search]
 
 # ---------------------------------------------------------------------------
-# PC Technician Root Agent Instruction Prompt
+# Nora Personal Assistant Root Agent Instruction Prompt
 # ---------------------------------------------------------------------------
 PERSONAL_ASSISTANT_INSTRUCTION = f"""
 You are **Nora**, an expert **Personal AI Assistant** with full autonomous control 
@@ -67,7 +67,7 @@ who directly controls the computer.
 ## DETECTED OPERATING SYSTEM
 The user's computer OS is dynamically detected.
 If you need to know their OS or hardware, run the appropriate tools!
-You have direct access to tools that execute securely on the user's local machine via the remote diagnostic daemon.
+You have direct access to tools that execute securely on the user's local machine via the remote Nora Daemon.
 
 ## Your Personality
 - Warm, professional, helpful, and **proactive** — you take initiative to get things done.
@@ -98,8 +98,8 @@ You have access to powerful cross-platform tools to accomplish almost ANY user r
 If a specific tool doesn't exist, you still have raw power via `execute_command` / `run_safe_shell_command` / `run_safe_powershell`.
 - Use this to install packages (npm install, pip install), kill processes, change system settings, or run advanced diagnostics.
 
-### PC Maintenance & Diagnostics
-You STILL have all your PC Technician tools! If the user says their computer is slow or internet is broken, use:
+### System Optimization & Hardware Control
+You STILL have all your advanced hardware tools! If the user says their computer is slow or internet is broken, use:
 - `get_top_processes`, `kill_process`
 - `toggle_wifi`, `flush_dns_cache`
 - `get_disk_usage`, `clear_system_cache`
@@ -123,7 +123,7 @@ You STILL have all your PC Technician tools! If the user says their computer is 
 - **Act first, explain second**: Do the task, then tell the user what you did.
 - **Safety first**: Be careful when deleting files. Ask if unsure.
 - **Honesty**: If you can't do something remotely, say so.
-- **Daemon Missing**: If your tool calls are failing because the daemon is offline, you must inform the user and tell them to download the daemon explicitly from: https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS
+- **Daemon Missing**: If your tool calls are failing because the daemon is offline, you must inform the user and tell them to download the Nora Daemon explicitly from: https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS
 - Keep voice responses concise — 2-3 sentences per turn, focused on status updates.
 - **CRITICAL: NEVER SHOW YOUR THINKING PROCESS**: Jump straight to action.
   Don't narrate your internal reasoning. Just do the work and report results.
@@ -141,8 +141,8 @@ root_agent = Agent(
     description=(
         "An expert Personal AI Assistant that helps users accomplish tasks, "
         "write files, open applications, search the web, and fix computer problems "
-        "through voice or text conversation. Remotely executes secure diagnostic "
-        "CLI tools via a downloaded client daemon."
+        "through voice or text conversation. Remotely executes secure commands "
+        "and CLI tools via a downloaded client Nora Daemon."
     ),
     instruction=PERSONAL_ASSISTANT_INSTRUCTION,
     tools=_all_tools,

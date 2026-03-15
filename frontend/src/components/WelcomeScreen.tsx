@@ -172,7 +172,7 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                                 Nora is a "ghost in the shell." Give her a body to act.
                             </p>
                             <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                To unlock Nora's ability to <span className="text-sky-400 font-medium">autonomously fix</span> your machine, you'll need the Diagnostic Daemon. 
+                                To unlock Nora's ability to <span className="text-sky-400 font-medium">autonomously fix</span> your machine, you'll need the Nora Daemon. 
                                 It's a secure, lightweight bridge that lets Nora's intelligence touch your hardware.
                             </p>
 

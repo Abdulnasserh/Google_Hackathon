@@ -386,7 +386,7 @@ export function ChatInterface() {
                                             {activity.status === 'failed' && (
                                                 <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
                                             )}
-                                            TechMCP({activity.name})
+                                            NoraMCP({activity.name})
                                         </div>
                                         {activity.args && Object.keys(activity.args).length > 0 && (
                                             <div className="text-[10px] font-mono text-white/50 bg-black/40 p-2 rounded ml-2 border-l border-white/10 break-all whitespace-pre-wrap">

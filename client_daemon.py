@@ -93,76 +93,84 @@ async def daemon_loop(url: str, session_id: str):
 
     while True:
         try:
-            async for websocket in websockets.connect(ws_url):
+            UI.info(f"Attempting secure connection to Nora...")
+            async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as websocket:
                 UI.success(f"Uplink Established! {UI.BOLD}Nora is now your Active Assistant.{UI.RESET}")
-                try:
-                    # Send initial presence payload
-                    await websocket.send(json.dumps({"type": "init", "os": os_sys}))
-                    
-                    async for message in websocket:
-                        data = json.loads(message)
-                        if data.get("type") == "tool_call":
-                            call_id = data.get("call_id")
-                            tool_name = data.get("tool_name")
-                            args = data.get("args", {})
-                            
-                            UI.executing(tool_name, args)
-                            
-                            status = "success"
-                            
-                            if tool_name in terminal_tool_map:
-                                tool_func = terminal_tool_map[tool_name]
-                                try:
-                                    res = tool_func(**args)
-                                    status = res.get("status", "success") if isinstance(res, dict) else "success"
-                                except Exception as e:
-                                    res = {"status": "error", "output": f"Terminal tool error: {e}"}
-                                    status = "error"
-                            
-                            elif hasattr(tools_module, tool_name):
-                                tool_func = getattr(tools_module, tool_name)
-                                try:
-                                    res = tool_func(**args)
-                                    status = res.get("status", "success") if isinstance(res, dict) else "success"
-                                except Exception as e:
-                                    res = {"status": "error", "output": f"Exception running {tool_name}: {str(e)}"}
-                                    status = "error"
-                            
-                            else:
-                                res = {"status": "error", "output": f"Tool '{tool_name}' is not available on this OS ({os_sys})."}
-                                status = "error"
-                            
-                            UI.result_status(status, res)
-                                
-                            response = {
-                                "type": "tool_result",
-                                "call_id": call_id,
-                                "result": json.dumps(res)
-                            }
-                            await websocket.send(json.dumps(response))
-                            
-                        elif data.get("type") == "terminal_stream":
-                            session_id_req = data.get("session_id", "default")
-                            lines = data.get("lines", 20)
+                
+                # Send initial presence payload
+                await websocket.send(json.dumps({"type": "init", "os": os_sys}))
+                
+                async for message in websocket:
+                    data = json.loads(message)
+                    if data.get("type") == "tool_call":
+                        call_id = data.get("call_id")
+                        tool_name = data.get("tool_name")
+                        args = data.get("args", {})
+                        
+                        UI.executing(tool_name, args)
+                        
+                        status = "success"
+                        
+                        if tool_name in terminal_tool_map:
+                            tool_func = terminal_tool_map[tool_name]
                             try:
-                                session = terminal_manager.get_or_create(session_id_req)
-                                output = session.get_recent_output(lines=lines)
-                                await websocket.send(json.dumps({
-                                    "type": "terminal_output",
-                                    "output": output,
-                                }))
+                                res = tool_func(**args)
+                                status = res.get("status", "success") if isinstance(res, dict) else "success"
                             except Exception as e:
-                                await websocket.send(json.dumps({
-                                    "type": "terminal_output",
-                                    "output": {"status": "error", "output": str(e)},
-                                }))
+                                res = {"status": "error", "output": f"Terminal tool error: {e}"}
+                                status = "error"
+                        
+                        elif hasattr(tools_module, tool_name):
+                            tool_func = getattr(tools_module, tool_name)
+                            try:
+                                res = tool_func(**args)
+                                status = res.get("status", "success") if isinstance(res, dict) else "success"
+                            except Exception as e:
+                                res = {"status": "error", "output": f"Exception running {tool_name}: {str(e)}"}
+                                status = "error"
+                        
+                        else:
+                            res = {"status": "error", "output": f"Tool '{tool_name}' is not available on this OS ({os_sys})."}
+                            status = "error"
+                        
+                        UI.result_status(status, res)
+                            
+                        response = {
+                            "type": "tool_result",
+                            "call_id": call_id,
+                            "result": json.dumps(res)
+                        }
+                        await websocket.send(json.dumps(response))
+                        
+                    elif data.get("type") == "terminal_stream":
+                        session_id_req = data.get("session_id", "default")
+                        lines = data.get("lines", 20)
+                        try:
+                            session = terminal_manager.get_or_create(session_id_req)
+                            output = session.get_recent_output(lines=lines)
+                            await websocket.send(json.dumps({
+                                "type": "terminal_output",
+                                "output": output,
+                            }))
+                        except Exception as e:
+                            await websocket.send(json.dumps({
+                                "type": "terminal_output",
+                                "output": {"status": "error", "output": str(e)},
+                            }))
                                 
-                except websockets.exceptions.ConnectionClosed:
-                    UI.error("Connection severed by gateway.")
-                    break
+        except websockets.exceptions.InvalidURI:
+            UI.error(f"Invalid Connection URI: {ws_url}")
+            break
+        except websockets.exceptions.ConnectionClosed:
+            UI.warning("Connection severed by gateway. Attempting reconnect...")
         except Exception as e:
-            UI.warning(f"Connection failed: {e}. Retrying in 3 seconds...")
-            await asyncio.sleep(3)
+            err_msg = str(e)
+            UI.warning(f"Connection failed: {err_msg}")
+            if "SSL" in err_msg or "certificate verify failed" in err_msg:
+                UI.error("Mac SSL Certificate Error detected!")
+                UI.info("Run: /Applications/Python\\ 3.x/Install\\ Certificates.command")
+            UI.info("Retrying in 5 seconds...")
+            await asyncio.sleep(5)
 
 
 def main():
