@@ -34,64 +34,27 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 Nora's architecture is a state-of-the-art **bidi-streaming, hybrid cloud-local topology**. It is engineered to achieve sub-second latency for natural voice interactions while safely delegating root execution to the user's local operating system.
 
 ```mermaid
-graph LR
-    subgraph Client ["Client - Frontend (React)"]
-        UI["Web Interface<br/>(16kHz PCM + UI)"]
-    end
+architecture-beta
+    group client(internet)[React Client]
+    group backend(cloud)[FastAPI Server]
+    group ai(cloud)[Google AI]
+    group host(server)[User PC]
 
-    subgraph WebSocket ["Web Socket"]
-        direction TB
-        S(["Send"]) --- R(["Receive"])
-    end
+    service ui(internet)[Web Interface] in client
+    service handler(server)[WebSocket Handler] in backend
+    service queue(disk)[Live Request Queue] in backend
+    service events(disk)[Agent Events] in backend
+    service adk(server)[Google ADK Bridge] in backend
+    service gemini(cloud)[Gemini 2.5 Live API] in ai
+    service daemon(server)[Nora Client Daemon] in host
 
-    subgraph Backend ["Server - Backend (FastAPI)"]
-        direction TB
-        subgraph WH ["websocket_handler"]
-            UT["handle_client_messages"]
-            SS["SessionState"]
-            DT["handle_agent_responses"]
-            UT --> SS --> DT
-        end
-        
-        LRQ[("live_request_queue")]
-        ADK{{"Agent Development Kit<br/>(ADK)"}}
-        EV["Events"]
-        
-        UT --> LRQ
-        LRQ --> ADK
-        ADK --> EV
-        EV --> DT
-    end
-
-    subgraph Intelligence ["Google AI"]
-        Gemini(("Gemini Live API"))
-    end
-
-    subgraph Execution ["Local Host - Client Daemon"]
-        Daemon["Diagnostic Daemon<br/>(PTY Server)"]
-        Tools["OS CLI Tools<br/>(Bash / PowerShell)"]
-        Daemon --- Tools
-    end
-
-    %% Connections
-    UI -- "Audio / Image Stream" --> S
-    S --> UT
-    DT --> R
-    R -- "Native Audio / Status" --> UI
-    
-    ADK <== "Bidi Streaming" ==> Gemini
-    
-    %% The Daemon Connection
-    ADK -- "Remote Tool Call" --> Daemon
-    Daemon -- "Execution Results" --> ADK
-
-    %% Styling
-    style Client fill:#e1f5fe,stroke:#01579b
-    style Backend fill:#e8f5e9,stroke:#2e7d32
-    style Intelligence fill:#f3e5f5,stroke:#7b1fa2
-    style Execution fill:#fff3e0,stroke:#e65100
-    style Gemini fill:#7b1fa2,color:#fff
-    style ADK fill:#2e7d32,color:#fff
+    ui:R -- L:handler
+    handler:R -- L:queue
+    queue:B -- T:adk
+    adk:L -- R:events
+    events:T -- B:handler
+    adk:R -- L:gemini
+    adk:B -- T:daemon
 ```
 
 ### 1. Fast, Bidirectional Streaming Pipeline (Google ADK)
