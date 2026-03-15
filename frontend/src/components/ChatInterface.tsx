@@ -126,15 +126,26 @@ export function ChatInterface() {
     if (!isListening) {
         return (
             <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] via-[#060610] to-[#040406] font-sans selection:bg-sky-500/30 overflow-hidden relative">
+                {/* Ambient Nora Branding Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
+                    <span className="text-[25vw] font-black text-white/[0.03] tracking-[0.2em]">NORA</span>
+                </div>
+
                 {/* Cinematic particle background */}
                 <ParticleField particleCount={50} />
                 {/* Daemon connection ceremony overlay */}
                 <DaemonStatusOverlay daemonConnected={daemonConnected} sessionId={sessionId} />
                 {/* Top App Bar */}
-                <div className="flex justify-between items-center px-8 pt-10 pb-4 max-w-5xl mx-auto w-full">
-                    <div className="flex flex-col leading-tight">
-                        <span className="text-3xl font-light tracking-widest text-sky-50">{timeStr}</span>
-                        <span className="text-xs text-sky-100/50 tracking-wilde font-semibold">{dateParts[1]} {dateParts[2]}</span>
+                <div className="flex justify-between items-center px-8 pt-10 pb-4 max-w-5xl mx-auto w-full relative z-20">
+                    <div className="flex items-center gap-6">
+                        <div className="flex flex-col leading-tight border-r border-white/10 pr-6">
+                            <span className="text-3xl font-light tracking-widest text-sky-50">{timeStr}</span>
+                            <span className="text-xs text-sky-100/50 tracking-widest font-semibold uppercase">{dateParts[1]} {dateParts[2]}</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold tracking-[0.3em] text-white/90 drop-shadow-sm">NORA</span>
+                            <span className="text-[10px] text-sky-400 font-bold uppercase tracking-[0.2em] -mt-1 opacity-80">Autonomous</span>
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right flex flex-col items-end">
@@ -186,8 +197,8 @@ export function ChatInterface() {
                         className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group z-10"
                         onClick={handleMicTap}
                     >
-                        <span className="text-sky-100/50 text-xs mb-2 tracking-widest uppercase font-medium">Personal Assistant</span>
-                        <span className="text-2xl font-light group-hover:text-sky-300 transition-colors gradient-text-premium">Tap to Connect</span>
+                        <span className="text-sky-100/30 text-[10px] mb-2 tracking-[0.5em] uppercase font-bold">NORA SYSTEM</span>
+                        <span className="text-2xl font-light group-hover:text-sky-300 transition-all duration-500 gradient-text-premium scale-110 group-hover:scale-125">Tap to Connect</span>
                         <div className="flex items-center gap-3 mt-4">
                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
                                 <Shield className="w-3 h-3 text-emerald-400" />
@@ -275,6 +286,12 @@ export function ChatInterface() {
         <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] via-[#060610] to-[#040406] font-sans overflow-hidden selection:bg-sky-500/30 relative">
             {/* Cinematic particle background */}
             <ParticleField particleCount={30} />
+            
+            {/* Ambient Nora Branding Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
+                <span className="text-[20vw] font-black text-white/[0.02] tracking-[0.2em] transform -rotate-12 translate-y-12">NORA</span>
+            </div>
+
             {/* Daemon connection ceremony overlay */}
             <DaemonStatusOverlay daemonConnected={daemonConnected} sessionId={sessionId} />
             {/* Top App Bar */}
@@ -286,16 +303,22 @@ export function ChatInterface() {
                     <ArrowLeft className="w-5 h-5 text-white/70" />
                 </button>
                 <div className="flex flex-col items-center">
-                    <div className="text-sm font-medium tracking-wide text-white/90">
-                        {status === "connecting" ? "Establishing Connection..." : "Assistant Active"}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-sky-400 font-bold uppercase tracking-[0.3em]">NORA</span>
+                        <div className="w-1 h-3 border-l border-white/20"></div>
+                        <div className="text-sm font-medium tracking-wide text-white/90">
+                            {status === "connecting" ? "Linking Interface..." : "Active Session"}
+                        </div>
                     </div>
                     {isAgentSpeaking && (
-                        <div className="text-[10px] text-sky-400 font-medium uppercase tracking-widest mt-1 animate-pulse">
-                            Synthesizing response
+                        <div className="text-[9px] text-sky-400/70 font-bold uppercase tracking-[0.4em] mt-1 animate-pulse">
+                            Processing Data
                         </div>
                     )}
                 </div>
-                <div className="w-10 h-10"></div> {/* Spacer for alignment */}
+                <div className="w-10 h-10 flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(56,189,248,0.8)] animate-pulse"></div>
+                </div> {/* Spacer for alignment */}
             </div>
 
             {/* Main Area: Mixed Text and Voice mode */}
