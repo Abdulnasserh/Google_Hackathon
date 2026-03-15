@@ -183,7 +183,7 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                                 <div className="flex flex-wrap gap-2">
                                     {navigator.userAgent.includes("Win") ? (
                                         <Button asChild size="sm" className="h-8 bg-sky-600 hover:bg-sky-500 text-white border-none shadow-lg shadow-sky-900/40">
-                                            <a href="/daemons/NoraDaemon-Windows.zip" download>
+                                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer">
                                                 <DownloadCloud className="w-3.5 h-3.5 mr-2" />
                                                 Download for Windows
                                             </a>
@@ -191,13 +191,13 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                                     ) : (
                                         <>
                                             <Button asChild size="sm" className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white border-none shadow-lg shadow-indigo-900/40">
-                                                <a href="/daemons/NoraDaemon-macOS-AppleSilicon.zip" download>
+                                                <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer">
                                                     <DownloadCloud className="w-3.5 h-3.5 mr-2" />
                                                     Mac (Apple Silicon)
                                                 </a>
                                             </Button>
                                             <Button asChild variant="outline" size="sm" className="h-8 border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground">
-                                                <a href="/daemons/NoraDaemon-macOS-Intel.zip" download>
+                                                <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer">
                                                     <DownloadCloud className="w-3.5 h-3.5 mr-2" />
                                                     Mac (Intel)
                                                 </a>

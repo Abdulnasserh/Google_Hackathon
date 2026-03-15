@@ -159,13 +159,13 @@ export function ChatInterface() {
                             <div className="mt-1 flex items-center gap-2">
                                 <span className="text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</span>
                                 <div className="flex gap-1.5 border-l border-white/10 pl-2">
-                                    <a href="/daemons/NoraDaemon-Windows.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon">
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon from GitHub">
                                         <Download className="w-2.5 h-2.5" /> Win
                                     </a>
-                                    <a href="/daemons/NoraDaemon-macOS-Intel.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Intel">
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Intel Daemon from GitHub">
                                         <Download className="w-2.5 h-2.5" /> Mac (Intel)
                                     </a>
-                                    <a href="/daemons/NoraDaemon-macOS-AppleSilicon.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Apple Silicon">
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Apple Silicon Daemon from GitHub">
                                         <Download className="w-2.5 h-2.5" /> Mac (Silicon)
                                     </a>
                                 </div>
