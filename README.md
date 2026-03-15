@@ -31,22 +31,92 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 
 ## 🏗️ Architecture & System Design
 
-Nora leverages a **hybrid cloud-local architecture**. The intelligence resides in **Google Cloud (Vertex AI)**, while the execution happens locally through a secure **Client Daemon**.
+Nora's architecture is a state-of-the-art **bidi-streaming, hybrid cloud-local topology**. It is engineered to achieve sub-second latency for natural voice interactions while safely delegating root execution to the user's local operating system.
 
-![Nora Architecture Diagram](README_assets/architecture_diagram.png)
+```mermaid
+graph LR
+    subgraph Client ["Client - Frontend (React)"]
+        UI["Web Interface<br/>(16kHz PCM + UI)"]
+    end
 
-### 1. Persistent Autonomous Execution (The "Live Command Engine")
-The crown jewel of Nora is her **Agentic execution architecture**. We moved beyond simple hardcoded diagnostic scripts. The AI is essentially a "ghost in the machine":
-- **Stateful Terminals:** The client daemon spawns a real, persistent `powershell.exe` or `/bin/bash` session. Directory changes (`cd`) and variables carry over between commands.
-- **Interactive Prompts:** If a process asks *"Are you sure? [y/N]"*, the backend does not hang. Nora reads the standard output stream, generates the answer `"y"`, and pushes it to standard input dynamically.
-- **Unrestricted Problem Solving:** Because she can synthesize raw shell commands, she can fix issues the developers never explicitly anticipated.
-- **Desktop Organization:** Nora can now "See" a messy desktop and autonomously arrange it into categorized folders (Screenshots, Images, Documents) using her newly added filesystem tools.
-- **Safety First:** The daemon implements a rigorous blocklist preventing destructive patterns (`rm -rf /`, `format`, password scraping).
+    subgraph WebSocket ["Web Socket"]
+        direction TB
+        S(["Send"]) --- R(["Receive"])
+    end
 
-### 2. Cinematic UX & Real-Time Feedback
-We've broken the "textbox paradigm". When the user asks Nora to fix their Bluetooth:
+    subgraph Backend ["Server - Backend (FastAPI)"]
+        direction TB
+        subgraph WH ["websocket_handler"]
+            UT["handle_client_messages"]
+            SS["SessionState"]
+            DT["handle_agent_responses"]
+            UT --> SS --> DT
+        end
+        
+        LRQ[("live_request_queue")]
+        ADK{{"Agent Development Kit<br/>(ADK)"}}
+        EV["Events"]
+        
+        UT --> LRQ
+        LRQ --> ADK
+        ADK --> EV
+        EV --> DT
+    end
+
+    subgraph Intelligence ["Google AI"]
+        Gemini(("Gemini Live API"))
+    end
+
+    subgraph Execution ["Local Host - Client Daemon"]
+        Daemon["Diagnostic Daemon<br/>(PTY Server)"]
+        Tools["OS CLI Tools<br/>(Bash / PowerShell)"]
+        Daemon --- Tools
+    end
+
+    %% Connections
+    UI -- "Audio / Image Stream" --> S
+    S --> UT
+    DT --> R
+    R -- "Native Audio / Status" --> UI
+    
+    ADK <== "Bidi Streaming" ==> Gemini
+    
+    %% The Daemon Connection
+    ADK -- "Remote Tool Call" --> Daemon
+    Daemon -- "Execution Results" --> ADK
+
+    %% Styling
+    style Client fill:#e1f5fe,stroke:#01579b
+    style Backend fill:#e8f5e9,stroke:#2e7d32
+    style Intelligence fill:#f3e5f5,stroke:#7b1fa2
+    style Execution fill:#fff3e0,stroke:#e65100
+    style Gemini fill:#7b1fa2,color:#fff
+    style ADK fill:#2e7d32,color:#fff
+```
+
+### 1. Fast, Bidirectional Streaming Pipeline (Google ADK)
+Inspired by the **Google Agent Development Kit (ADK)** reference architecture, we discarded traditional request/response paradigms in favor of pure WebSocket streams. 
+
+When a user speaks, the React frontend streams **raw 16kHz PCM audio** directly to the FastAPI Backend WebSocket handler. Inside the backend, a concurrent connection manager handles the intricate lifecycle:
+- **Upstream Task (`handle_client_messages`)**: Receives the continuous audio and screenshot inputs from the `Web Socket` and pushes them directly into a low-latency **`live_request_queue`**.
+- **Agent Development Kit Logic**: The ADK seamlessly consumes from the `live_request_queue` and bridges the connection over to the **Gemini Live Streaming API**, preserving session state and multi-turn context (`SessionState`).
+- **Downstream Task (`handle_agent_responses`)**: As Gemini streams native 24kHz audio and tool execution requests back down, they are yielded as discrete **`Events`**. The downstream task intercepts these events, forwarding audio back to the React UI for instant playback.
+
+This architecture fundamentally reduces "time to first byte" (TTFB) and allows for true **graceful interruptions**—if the user speaks while Nora is talking, the input buffer generates an interrupt signal, immediately clearing the output audio queue and coordinating the cancellation down the entire event chain.
+
+### 2. Persistent Autonomous Execution (The "Live Command Engine")
+While the intelligence resides in Google Cloud, the *action* happens locally. The backend communicates synchronously with our **Client Daemon** using a dedicated remote tool execution WebSocket (the "Tool Interceptor WS").
+
+- **Stateful Terminals (PTY Server):** The client daemon spawns a real, persistent `powershell.exe` or `/bin/bash` session. Directory changes (`cd`) and variables carry over between commands just like an SSH session.
+- **Interactive Prompts:** If a process asks *"Are you sure? [y/N]"*, the backend does not hang. Nora reads the standard output stream, generates the answer `"y"`, and pushes it into the interactive terminal dynamically.
+- **Unrestricted Problem Solving:** Because the ADK tool layer dynamically wraps these CLI capabilities, Nora can synthesize raw shell commands to fix bespoke issues the developers never explicitly anticipated.
+- **Desktop Organization:** Nora can now "See" a messy desktop and autonomously arrange it into categorized folders (Screenshots, Images, Documents) using her dynamically hooked filesystem tools.
+- **Safety First:** The local daemon validates all incoming commands against a rigorous blocklist, preventing destructive operations or privacy-violating read access.
+
+### 3. Cinematic UX & Real-Time Feedback
+We've broken the "textbox paradigm." When the user asks Nora to fix their Bluetooth:
 - They don't just get a text reply saying "I fixed it."
-- A **Live Activity** dashboard slides in, showing a cinematic stream of the exact CLI commands Nora is executing on their machine (`> launchctl kickstart -k system/com.apple.bluetoothd`).
+- A **Live Activity** dashboard slides in via React, showing a cinematic stream of the exact execution results streaming back from the Client Daemon's PTY server. (`> launchctl kickstart -k system/com.apple.bluetoothd`).
 - **OS-Aware Onboarding:** The frontend detects the user's OS and provides tailored, one-click download links for the **Nora Daemon (.zip)** directly from the cloud backend.
 
 ---
