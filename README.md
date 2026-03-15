@@ -136,7 +136,7 @@ While this specific application is designed to run locally to allow the AI acces
 
 **How it uses Google Cloud:**
 - **Google ADK & Vertex AI/Gemini API:** The core intelligence and multimodal live streaming are powered completely by Google's cloud infrastructure via the Gemini Live API endpoint.
-- **Production Deployment Strategy:** In a production scenario, the FastAPI backend acts as a signaling server and can be deployed via **Google Cloud Run** using a Dockerfile. The local CLI tools would be packaged into a lightweight, downloadable client daemon (e.g., using PyInstaller) that connects via WebSocket to the Cloud Run backend, maintaining strict security and isolation.
+- **Production Deployment Strategy:** In a production scenario, the FastAPI backend acts as a signaling server and is deployed via **Google Cloud Run** using a Dockerfile. The local CLI tools are packaged into a lightweight, downloadable client daemon (e.g., using PyInstaller) that connects via WebSocket to the Cloud Run backend, maintaining strict security and isolation.
 
 ---
 
