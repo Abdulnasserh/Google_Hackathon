@@ -1,11 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import {
     Mic,
     ArrowLeft,
-    Keyboard,
     X,
     Activity,
-    ArrowUpRight,
     MonitorUp,
     ImagePlus,
     Download,
@@ -21,9 +19,7 @@ import { ParticleField } from "@/components/ParticleField";
 import { DaemonStatusOverlay } from "@/components/DaemonStatusOverlay";
 
 export function ChatInterface() {
-    const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
-    const [textInput, setTextInput] = useState("");
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const {
@@ -112,33 +108,7 @@ export function ChatInterface() {
         }
     }, [isRecording, isConnected, isAgentSpeaking, connect, disconnect, startRecording, stopRecording, interruptAgent]);
 
-    const handleSendText = useCallback(() => {
-        if (!textInput.trim()) return;
-        if (isAgentSpeaking) {
-            interruptAgent();
-        }
-        sendText(textInput);
-        setTextInput("");
-        if (!isConnected) {
-            connect();
-        }
-    }, [textInput, sendText, isConnected, connect, isAgentSpeaking, interruptAgent]);
 
-    const handleKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendText();
-            }
-        },
-        [handleSendText]
-    );
-
-    useEffect(() => {
-        if (inputMode === "text") {
-            setTimeout(() => textareaRef.current?.focus(), 100);
-        }
-    }, [inputMode]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,11 +120,10 @@ export function ChatInterface() {
             stopRecording();
             disconnect();
         }
-        setInputMode("voice");
-    }, [isAgentSpeaking, interruptAgent, isRecording, isConnected, stopRecording, disconnect, setInputMode]);
+    }, [isAgentSpeaking, interruptAgent, isRecording, isConnected, stopRecording, disconnect]);
 
     // View: HOME DASHBOARD (Idle)
-    if (!isListening && inputMode === "voice") {
+    if (!isListening) {
         return (
             <div className="flex flex-col h-screen text-white bg-gradient-to-b from-[#0a0a0f] via-[#060610] to-[#040406] font-sans selection:bg-sky-500/30 overflow-hidden relative">
                 {/* Cinematic particle background */}
@@ -182,13 +151,13 @@ export function ChatInterface() {
                             <div className="mt-1 flex items-center gap-2">
                                 <span className="text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</span>
                                 <div className="flex gap-1.5 border-l border-white/10 pl-2">
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon">
+                                    <a href="/daemons/NoraDaemon-Windows.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon">
                                         <Download className="w-2.5 h-2.5" /> Win
                                     </a>
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Intel">
+                                    <a href="/daemons/NoraDaemon-macOS-Intel.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Intel">
                                         <Download className="w-2.5 h-2.5" /> Mac (Intel)
                                     </a>
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Apple Silicon">
+                                    <a href="/daemons/NoraDaemon-macOS-AppleSilicon.zip" download className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Apple Silicon">
                                         <Download className="w-2.5 h-2.5" /> Mac (Silicon)
                                     </a>
                                 </div>
@@ -250,7 +219,7 @@ export function ChatInterface() {
                             { icon: "📶", text: "Fix my Wi-Fi connection" },
                             { icon: "🐌", text: "My PC is running slow, fix it" },
                         ].map((q, i) => (
-                            <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 flex items-center gap-2.5" onClick={() => { setTextInput(q.text); setInputMode("text"); }}>
+                            <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 flex items-center gap-2.5" onClick={async () => { await connect(); try { await startRecording(); } catch {} sendText(q.text); }}>
                                 <span>{q.icon}</span>
                                 <span>{q.text}</span>
                             </div>
@@ -321,8 +290,7 @@ export function ChatInterface() {
 
             {/* Main Area: Mixed Text and Voice mode */}
             <div className="flex-1 flex flex-col min-h-0 z-10 w-full">
-                {(isListening && inputMode === "voice") ? (
-                    // Full screen Orb View with Activity Log
+                {/* Full screen Orb View with Activity Log */}
                     <div className="flex-1 flex flex-col md:flex-row items-center justify-center relative w-full h-full min-h-[400px] max-w-6xl mx-auto px-6 gap-8">
 
                         {/* Empty spacer for centering on desktop if needed, or left-aligning */}
@@ -406,50 +374,10 @@ export function ChatInterface() {
                             </div>
                         </div>
                     </div>
-                ) : (
-                    // Text Chat View
-                    <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-6 w-full max-w-3xl mx-auto hide-scrollbar">
-                        {messages.length === 0 && !currentTranscription && (
-                            <div className="text-center text-white/30 mt-10 font-light text-sm">Initiate diagnostic by typing or speaking in the prompt below.</div>
-                        )}
-                        {messages.map((msg, i) => (
-                            <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                <div className={`px-5 py-3.5 max-w-[85%] rounded-[1.5rem] text-[15px] leading-relaxed relative
-                       ${msg.role === 'user' ? 'bg-[#1a1a24] text-white rounded-br-sm border border-white/10 shadow-lg' : 'bg-transparent text-white/90'}
-                    `}>
-                                    {msg.role !== 'user' && (
-                                        <div className="text-[10px] text-sky-400 uppercase tracking-widest mb-1 font-medium flex items-center gap-1.5">
-                                            <Activity className="w-3 h-3" /> Technician
-                                        </div>
-                                    )}
-                                    {msg.content}
-                                </div>
-                            </div>
-                        ))}
-
-                        {/* Live Transcription / AI Thinking */}
-                        {(currentTranscription || isAgentSpeaking) && (
-                            <div className="flex flex-col items-start opacity-80 transition-opacity duration-300 w-full max-w-3xl mx-auto">
-                                <div className="px-5 py-3 max-w-[85%] rounded-[1.5rem] rounded-bl-sm text-white/70">
-                                    {currentTranscription ? (
-                                        <span className="italic text-white/50">"{currentTranscription}"</span>
-                                    ) : (
-                                        <div className="flex gap-1.5 items-center h-6">
-                                            <div className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-[thinking-dots_1.4s_infinite]"></div>
-                                            <div className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-[thinking-dots_1.4s_infinite_0.2s]"></div>
-                                            <div className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-[thinking-dots_1.4s_infinite_0.4s]"></div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} className="h-4 w-full" />
-                    </div>
-                )}
             </div>
 
             {/* Transcript Text over Voice Orb (Only visible in pure voice mode) */}
-            {isListening && inputMode === "voice" && (messages.length > 0 || currentTranscription) && (
+            {isListening && (messages.length > 0 || currentTranscription) && (
                 <div className="px-8 pb-10 text-center z-20 w-full max-w-3xl mx-auto">
                     <p className="text-2xl font-light text-white leading-relaxed">
                         {currentTranscription ? (
@@ -486,69 +414,9 @@ export function ChatInterface() {
             {/* Bottom Controls */}
             <div className="px-8 pb-10 pt-4 w-full flex justify-between items-center max-w-lg mx-auto z-20 relative">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-4"></div>
-                {inputMode === "text" ? (
-                    // Text Input Bar
-                    <div className="w-full flex items-center gap-2 bg-[#12121a]/90 backdrop-blur-xl border border-white/10 rounded-full pl-6 pr-2 py-2 shadow-2xl">
-                        <textarea
-                            ref={textareaRef}
-                            value={textInput}
-                            onChange={(e) => setTextInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Message Technician..."
-                            className="flex-1 bg-transparent border-none outline-none text-white resize-none h-[24px] max-h-[100px] py-0.5 text-[15px] placeholder:text-white/30"
-                            rows={1}
-                        />
-                        <div className="flex items-center gap-1 border-l border-white/10 pl-2">
-                            <button
-                                onClick={toggleScreenShare}
-                                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${isScreenSharing ? 'text-indigo-400 bg-indigo-500/20' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
-                                title="Share Screen"
-                            >
-                                <MonitorUp className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-9 h-9 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                                title="Upload Image"
-                            >
-                                <ImagePlus className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setInputMode("voice")}
-                                className="w-9 h-9 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                            >
-                                <Mic className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={handleSendText}
-                                disabled={!textInput.trim()}
-                                className="w-9 h-9 flex items-center justify-center rounded-full bg-sky-500 hover:bg-sky-400 disabled:bg-sky-500/20 disabled:text-white/30 text-white transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] disabled:shadow-none ml-1"
-                            >
-                                <ArrowUpRight className="w-4 h-4" />
-                            </button>
-                            {isAgentSpeaking && (
-                                <button
-                                    onClick={interruptAgent}
-                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors ml-1"
-                                    title="Stop Agent Speaking"
-                                >
-                                    <div className="w-3 h-3 bg-current rounded-sm" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    // Voice Controls
+                    {/* Voice Controls */}
                     <>
                         <div className="flex gap-2">
-                            <button
-                                onClick={() => setInputMode("text")}
-                                className="w-12 h-12 rounded-full bg-[#12121a]/80 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg"
-                                title="Switch to Text"
-                            >
-                                <Keyboard className="w-5 h-5 text-white/50" />
-                            </button>
-
                             <button
                                 onClick={() => fileInputRef.current?.click()}
                                 className="w-12 h-12 rounded-full bg-[#12121a]/80 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg"
@@ -596,7 +464,6 @@ export function ChatInterface() {
                             )}
                         </div>
                     </>
-                )}
             </div>
         </div>
     );

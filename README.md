@@ -66,30 +66,40 @@ We've broken the "textbox paradigm." When the user asks Nora to fix their Blueto
 
 ```
 Google_Hackathon/
-├── .env                        # API key + model config
-├── requirements.txt            # Python dependencies
+├── .env                          # API key + model config
+├── requirements.txt              # Python dependencies
+├── client_daemon.py              # Local execution daemon: receives WS tool calls from backend
 │
-├── bidi_streaming_agent/       # Google ADK Agent Code
-│   ├── agent.py                # Root agent: Persona, MCP Client loading
-│   ├── mcp_client_bridge.py    # Bridge: Spawns MCP server & dynamically wraps tools
-│   ├── mcp_servers/            # Standalone FastMCP servers
-│   │   ├── mac_mcp_server.py   # macOS FastMCP entry point
+├── bidi_streaming_agent/         # Google ADK Agent Code
+│   ├── agent.py                  # Root agent: Persona, instruction sets, tool bindings
+│   ├── mcp_client_bridge.py      # Bridge: Spawns MCP server & dynamically wraps tools
+│   ├── mcp_servers/              # Standalone FastMCP servers
+│   │   ├── mac_mcp_server.py     # macOS FastMCP entry point
 │   │   └── windows_mcp_server.py # Windows FastMCP entry point
-│   └── tools/                  # Underlying CLI implementation logic
-│       ├── mac_tools.py        # 17 safe CLI tools for macOS (with output truncation)
-│       └── windows_tools.py    # 20 safe CLI tools for Windows (with output truncation)
+│   └── tools/                    # Underlying CLI implementation logic
+│       ├── mac_tools.py          # 17 safe CLI tools for macOS (with output truncation)
+│       ├── windows_tools.py      # 20 safe CLI tools for Windows (with output truncation)
+│       └── terminal_session.py   # Persistent PTY server: maintains stateful terminal access
 │
 ├── app/
-│   └── main.py                 # FastAPI WebSocket server (session & interrupt mgmt)
+│   └── main.py                   # FastAPI WebSocket server (session, interrupt mgmt, tool interceptor)
 │
-└── frontend/                   # React app (Vite + TypeScript)
+├── daemons/                      # Pre-built daemon binaries for one-click download
+│   ├── NoraDaemon-Windows.zip
+│   ├── NoraDaemon-macOS-AppleSilicon.zip
+│   └── NoraDaemon-macOS-Intel.zip
+│
+└── frontend/                     # React app (Vite + TypeScript)
     └── src/
         ├── hooks/
-        │   ├── useWebSocket.ts      # WS lifecycle, streaming, interruption handling
-        │   └── useAudioRecorder.ts  # Mic capture via AudioWorklet (16kHz PCM)
+        │   ├── useWebSocket.ts        # WS lifecycle, bidi-streaming, interruption handling
+        │   └── useAudioRecorder.ts    # Mic capture via AudioWorklet (16kHz PCM)
         └── components/
-            ├── ChatInterface.tsx    # Main UI (Messages, Mic toggle, Screen Share)
-            └── ui/                  # Shadcn UI primitives
+            ├── ChatInterface.tsx      # Voice-first UI (Orb, Activity Log, Screen Share)
+            ├── DaemonStatusOverlay.tsx # Daemon connection ceremony overlay
+            ├── Orb.tsx                # Animated AI voice orb visualization
+            ├── ParticleField.tsx      # Cinematic particle background
+            └── ui/                    # Shadcn UI primitives
 ```
 
 ---

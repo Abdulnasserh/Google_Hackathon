@@ -1,0 +1,114 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/DaemonStatusOverlay.tsx
+  23:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/DaemonStatusOverlay.tsx:23:13
+  21 |     useEffect(() => {
+  22 |         if (daemonConnected && !hasShownOnce) {
+> 23 |             setShowCeremony(true);
+     |             ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  24 |             setHasShownOnce(true);
+  25 |
+  26 |             // Phase 1: Shield icon  react-hooks/set-state-in-effect
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/badge.tsx
+  40:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/button.tsx
+  58:18  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/orb.tsx
+  133:41  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/orb.tsx:133:41
+  131 |
+  132 |   const random = useMemo(
+> 133 |     () => splitmix32(seed ?? Math.floor(Math.random() * 2 ** 32)),
+      |                                         ^^^^^^^^^^^^^ Cannot call impure function
+  134 |     [seed]
+  135 |   )
+  136 |   const offsets = useMemo(  react-hooks/purity
+  173:5   error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/orb.tsx:173:5
+  171 |     }
+  172 |     const u = mat.uniforms
+> 173 |     u.uTime.value += delta * 0.5
+      |     ^^^^^^^ `circleRef` cannot be modified
+  174 |
+  175 |     if (u.uOpacity.value < 1) {
+  176 |       u.uOpacity.value = Math.min(1, u.uOpacity.value + delta * 2)                                                                                                                                       react-hooks/immutability
+  234:5   error  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/orb.tsx:234:5
+  232 |
+  233 |   const uniforms = useMemo(() => {
+> 234 |     perlinNoiseTexture.wrapS = THREE.RepeatWrapping
+      |     ^^^^^^^^^^^^^^^^^^ value cannot be modified
+  235 |     perlinNoiseTexture.wrapT = THREE.RepeatWrapping
+  236 |     const isDark =
+  237 |       typeof document !== "undefined" &&                                                                                                                          react-hooks/immutability
+  235:5   error  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/components/ui/orb.tsx:235:5
+  233 |   const uniforms = useMemo(() => {
+  234 |     perlinNoiseTexture.wrapS = THREE.RepeatWrapping
+> 235 |     perlinNoiseTexture.wrapT = THREE.RepeatWrapping
+      |     ^^^^^^^^^^^^^^^^^^ value cannot be modified
+  236 |     const isDark =
+  237 |       typeof document !== "undefined" &&
+  238 |       document.documentElement.classList.contains("dark")                                                                react-hooks/immutability
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/hooks/useWebSocket.ts
+  401:77  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  482:25  error  Error: Cannot access variable before it is declared
+
+`connect` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/hooks/useWebSocket.ts:482:25
+  480 |                     reconnectAttemptsRef.current = attempt;
+  481 |                     reconnectTimerRef.current = setTimeout(() => {
+> 482 |                         connect();
+      |                         ^^^^^^^ `connect` accessed before it is declared
+  483 |                     }, delay);
+  484 |                 } else {
+  485 |                     setStatus("disconnected");
+
+/Users/abdul/Desktop/Google_Hackathon/frontend/src/hooks/useWebSocket.ts:375:5
+  373 |     // Connect (with auto-reconnect on unexpected disconnects)
+  374 |     // -----------------------------------------------------------------------
+> 375 |     const connect = useCallback(async () => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 376 |         if (wsRef.current?.readyState === WebSocket.OPEN) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 377 |         if (isConnectingRef.current) return;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 498 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 499 |     }, [handleEvent, initAudioPlayer, clearReconnectTimer]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `connect` is declared here
+  500 |
+  501 |     // -----------------------------------------------------------------------
+  502 |     // Disconnect  react-hooks/immutability
+
+✖ 9 problems (9 errors, 0 warnings)
+
