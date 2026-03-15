@@ -610,6 +610,140 @@ def restart_audio_service() -> dict:
     return {"status": "success", "output": f"Core Audio service restarted. Audio should resume in a few seconds. {output}"}
 
 
+def list_directory(path: str) -> dict:
+    """
+    List files and folders in a specific directory.
+    Use this to see what's on the user's Desktop or in any other folder.
+    
+    Args:
+        path: Absolute path to the directory (e.g. '/Users/user/Desktop').
+              Use '~/Desktop' for the current user's desktop.
+    """
+    # Expand ~
+    import os
+    expanded_path = os.path.expanduser(path)
+    output = _run(["ls", "-lah", expanded_path], timeout=10)
+    return {"status": "success", "output": output}
+
+
+def move_path(src: str, dst: str) -> dict:
+    """
+    Move or rename a file or folder.
+    
+    Args:
+        src: Source path.
+        dst: Destination path.
+    """
+    import os
+    src_exp = os.path.expanduser(src)
+    dst_exp = os.path.expanduser(dst)
+    output = _run(["mv", src_exp, dst_exp], timeout=10)
+    return {"status": "success", "output": f"Moved {src} to {dst}. {output}"}
+
+
+def create_directory(path: str) -> dict:
+    """
+    Create a new directory (folder).
+    
+    Args:
+        path: Path of the directory to create.
+    """
+    import os
+    exp_path = os.path.expanduser(path)
+    output = _run(["mkdir", "-p", exp_path], timeout=10)
+    return {"status": "success", "output": f"Created directory {path}. {output}"}
+
+
+def organize_directory(path: str) -> dict:
+    """
+    Automatically organize a messy directory by grouping files into subfolders
+    based on their file type (e.g. 'Screenshots', 'Documents', 'Images').
+    Use this when a user asks to 'clean up' or 'arrange' their Desktop.
+    
+    Args:
+        path: Absolute path to the directory to organize (e.g. '~/Desktop').
+    """
+    import os
+    import shutil
+    
+    target_dir = os.path.expanduser(path)
+    if not os.path.isdir(target_dir):
+        return {"status": "error", "output": f"Path '{path}' is not a directory."}
+    
+    # Define categories and their extensions
+    categories = {
+        "Screenshots": [".png"], # Special handling for filenames starting with "Screenshot"
+        "Images": [".jpg", ".jpeg", ".gif", ".svg", ".bmp", ".tiff", ".webp", ".heic"],
+        "Documents": [".pdf", ".docx", ".doc", ".txt", ".rtf", ".pptx", ".xlsx", ".pages", ".numbers", ".key", ".md", ".csv"],
+        "Archives": [".zip", ".tar", ".gz", ".7z", ".rar", ".dmg", ".pkg"],
+        "Media": [".mp4", ".mov", ".avi", ".mkv", ".mp3", ".wav", ".m4a"],
+        "Code": [".py", ".js", ".html", ".css", ".cpp", ".h", ".java", ".go", ".rs", ".ts", ".tsx", ".json", ".yaml", ".yml"],
+    }
+    
+    moved_count = 0
+    errors = []
+    
+    try:
+        for filename in os.listdir(target_dir):
+            file_path = os.path.join(target_dir, filename)
+            
+            # Skip directories
+            if not os.path.isfile(file_path):
+                continue
+                
+            # Skip hidden files
+            if filename.startswith('.'):
+                continue
+                
+            name_lower = filename.lower()
+            ext = os.path.splitext(name_lower)[1]
+            
+            target_category = "Miscellaneous"
+            
+            # Special case for screenshots
+            if name_lower.startswith("screenshot") or "screen shot" in name_lower:
+                target_category = "Screenshots"
+            else:
+                for cat, exts in categories.items():
+                    if ext in exts:
+                        target_category = cat
+                        break
+            
+            # Create category folder if it doesn't exist
+            cat_dir = os.path.join(target_dir, target_category)
+            if not os.path.exists(cat_dir):
+                try:
+                    os.makedirs(cat_dir)
+                except Exception as e:
+                    errors.append(f"Failed to create directory {target_category}: {e}")
+                    continue
+                    
+            # Move file
+            try:
+                # Check for name collision
+                dest_path = os.path.join(cat_dir, filename)
+                if os.path.exists(dest_path):
+                    # Simple renaming for collision
+                    base, extension = os.path.splitext(filename)
+                    idx = 1
+                    while os.path.exists(os.path.join(cat_dir, f"{base}_{idx}{extension}")):
+                        idx += 1
+                    dest_path = os.path.join(cat_dir, f"{base}_{idx}{extension}")
+                
+                shutil.move(file_path, dest_path)
+                moved_count += 1
+            except Exception as e:
+                errors.append(f"Failed to move {filename}: {e}")
+    except Exception as e:
+        return {"status": "error", "output": f"Unexpected error during organization: {e}"}
+            
+    summary = f"Successfully organized {moved_count} files in {path} into folders."
+    if errors:
+        summary += f"\nNote: {len(errors)} errors occurred:\n" + "\n".join(errors[:5])
+        
+    return {"status": "success", "output": summary}
+
+
 # ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
@@ -649,5 +783,9 @@ ALL_MAC_TOOLS = [
     run_safe_shell_command,
     set_volume,
     restart_audio_service,
+    list_directory,
+    move_path,
+    create_directory,
+    organize_directory,
 ]
 

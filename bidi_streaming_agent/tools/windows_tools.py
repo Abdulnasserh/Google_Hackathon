@@ -667,6 +667,123 @@ def restart_print_spooler() -> dict:
     return {"status": "success", "output": f"Print Spooler restarted and queue cleared. {output}"}
 
 
+def list_directory(path: str) -> dict:
+    """
+    List files and folders in a specific directory on Windows.
+    
+    Args:
+        path: Absolute path to the directory (e.g. 'C:\\Users\\user\\Desktop').
+    """
+    output = _run_powershell(f"Get-ChildItem -Path '{path}' | Format-Table Mode, LastWriteTime, Length, Name -AutoSize", timeout=10)
+    return {"status": "success", "output": output}
+
+
+def move_path(src: str, dst: str) -> dict:
+    """
+    Move or rename a file or folder on Windows.
+    
+    Args:
+        src: Source path.
+        dst: Destination path.
+    """
+    output = _run_powershell(f"Move-Item -Path '{src}' -Destination '{dst}' -Force", timeout=10)
+    return {"status": "success", "output": f"Moved {src} to {dst}. {output}"}
+
+
+def create_directory(path: str) -> dict:
+    """
+    Create a new directory (folder) on Windows.
+    
+    Args:
+        path: Path of the directory to create.
+    """
+    output = _run_powershell(f"New-Item -ItemType Directory -Force -Path '{path}'", timeout=10)
+    return {"status": "success", "output": f"Created directory {path}. {output}"}
+
+
+def organize_directory(path: str) -> dict:
+    """
+    Automatically organize a messy directory on Windows by grouping files
+    into subfolders based on their file type (e.g. 'Screenshots', 'Documents').
+    
+    Args:
+        path: Absolute path to the directory to organize.
+    """
+    import os
+    import shutil
+    
+    # Use os.path behaviors for reliability in Python
+    target_dir = os.path.expanduser(path)
+    if not os.path.isdir(target_dir):
+        return {"status": "error", "output": f"Path '{path}' is not a directory."}
+    
+    categories = {
+        "Screenshots": [".png"],
+        "Images": [".jpg", ".jpeg", ".gif", ".svg", ".bmp", ".tiff", ".webp"],
+        "Documents": [".pdf", ".docx", ".doc", ".txt", ".rtf", ".pptx", ".xlsx", ".md", ".csv"],
+        "Archives": [".zip", ".tar", ".gz", ".7z", ".rar"],
+        "Media": [".mp4", ".mov", ".avi", ".mkv", ".mp3", ".wav"],
+        "Code": [".py", ".js", ".html", ".css", ".cpp", ".h", ".java", ".go", ".rs", ".ts", ".tsx", ".json", ".yaml", ".yml"],
+    }
+    
+    moved_count = 0
+    errors = []
+    
+    try:
+        if not os.path.exists(target_dir):
+             return {"status": "error", "output": f"Directory not found: {target_dir}"}
+
+        for filename in os.listdir(target_dir):
+            file_path = os.path.join(target_dir, filename)
+            
+            if not os.path.isfile(file_path):
+                continue
+            if filename.startswith('.') or filename.lower() == "desktop.ini":
+                continue
+                
+            name_lower = filename.lower()
+            ext = os.path.splitext(name_lower)[1]
+            
+            target_category = "Miscellaneous"
+            if name_lower.startswith("screenshot") or "screen shot" in name_lower:
+                target_category = "Screenshots"
+            else:
+                for cat, exts in categories.items():
+                    if ext in exts:
+                        target_category = cat
+                        break
+            
+            cat_dir = os.path.join(target_dir, target_category)
+            if not os.path.exists(cat_dir):
+                try:
+                    os.makedirs(cat_dir)
+                except Exception as e:
+                    errors.append(f"Failed to create directory {target_category}: {e}")
+                    continue
+                    
+            try:
+                dest_path = os.path.join(cat_dir, filename)
+                if os.path.exists(dest_path):
+                    base, extension = os.path.splitext(filename)
+                    idx = 1
+                    while os.path.exists(os.path.join(cat_dir, f"{base}_{idx}{extension}")):
+                        idx += 1
+                    dest_path = os.path.join(cat_dir, f"{base}_{idx}{extension}")
+                
+                shutil.move(file_path, dest_path)
+                moved_count += 1
+            except Exception as e:
+                errors.append(f"Failed to move {filename}: {e}")
+    except Exception as e:
+        return {"status": "error", "output": f"Unexpected error during organization: {e}"}
+            
+    summary = f"Successfully organized {moved_count} files in {path} into folders."
+    if errors:
+        summary += f"\nNote: {len(errors)} errors occurred:\n" + "\n".join(errors[:5])
+        
+    return {"status": "success", "output": summary}
+
+
 # ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
@@ -710,5 +827,9 @@ ALL_WINDOWS_TOOLS = [
     set_volume,
     restart_audio_service,
     restart_print_spooler,
+    list_directory,
+    move_path,
+    create_directory,
+    organize_directory,
 ]
 

@@ -136,7 +136,9 @@ These tools let you ACTUALLY FIX problems, not just report them:
 - **restart_print_spooler** — Restart print service and clear stuck print jobs (Windows)
 - **flush_dns_cache** — Clear DNS cache to fix website loading issues
 
-### System Cleanup
+### System Cleanup & Organization
+- **list_directory** — See files and folders in a specific path (e.g. '~/Desktop')
+- **organize_directory** — Automatically clean up a messy folder by grouping files into 'Images', 'Documents', 'Screenshots', etc.
 - **clear_system_cache / clear_temp_files** — Clear caches to fix performance issues
 - **empty_trash / empty_recycle_bin** — Free up disk space
 - **release_renew_ip** — Reset network IP configuration (Windows)
