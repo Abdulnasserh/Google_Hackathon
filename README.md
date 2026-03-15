@@ -1,6 +1,6 @@
 # Nora — Personal AI Assistant
 
-> 🏆 **Google Live Agent Hackathon Submission**
+> 🏆 **Google Live Agent Hackathon**
 > **Category:** Live Agents 🗣️
 > An advanced multimodal AI assistant that can **See, Hear, Speak, and Act** to help users accomplish complex tasks in real-time, from writing code and compiling apps to troubleshooting their PC.
 
@@ -59,6 +59,59 @@ While the intelligence resides in Google Cloud, the *action* happens locally. Th
 - They don't just get a text reply saying "Here is the code."
 - A **Live Activity** dashboard slides in via React, showing a cinematic stream of the exact execution results streaming back from the Client Daemon (`> Project 'calculator' created`, or `> python3 main.py`).
 - **OS-Aware Onboarding:** The frontend detects the user's OS and provides tailored, one-click download links for the **Nora Daemon (.zip)** directly from the cloud backend.
+
+---
+
+## 🛠️ The Nora Client Daemon (The Live Engine)
+
+While Nora's "brain" resides in Google's cloud, the **Nora Client Daemon** acts as her local "hands." It is a lightweight, asynchronous Python agent that runs on the user's host machine, bridging the gap between high-level reasoning and low-level system execution.
+
+### ⚙️ How It Works: The "Uplink" Architecture
+The daemon operates via a persistent **Secure WebSocket (WSS)** connection back to the Nora Orchestrator:
+1.  **Pairing & Handshake:** When started, the daemon requires a **Session ID** (generated uniquely by the React frontend). This ensures a secure 1:1 pairing between the browser interface and the host machine.
+2.  **Host Discovery:** The daemon automatically identifies the Host OS (macOS or Windows) and dynamically hooks the appropriate **Agent Tools** (e.g., `mac_tools` using `osascript`/`ifconfig` or `windows_tools` using `PowerShell`).
+3.  **Autonomous Tool Execution:** When the Gemini model decides to act (e.g., `"I will create a directory and write the code"`), the Orchestrator sends a `tool_call` event to the daemon. The daemon executes the command locally and streams the `stdout/stderr` back in real-time.
+4.  **Stateful Terminal Management:** Unlike simple script runners, the daemon manages persistent shell sessions. Directory changes (`cd`) and environment variables persist across multiple turns.
+5.  **Safety & Security:**
+    *   **Command Whitelisting:** All core tools (network, system, disk) use pre-defined, hardened commands.
+    *   **Injection Protection:** Arguments are sanitized using `shlex` quoting to prevent shell injection.
+    *   **Blocklist Enforcement:** Destructive commands (e.g., `rm -rf /`, formatting disks) and privacy-violating operations (e.g., accessing keychains) are strictly blocked by a hardcoded security filter.
+
+---
+
+## 🚀 Judging & Testing Guide
+
+To experience Nora's full autonomous capabilities, judges should run both the cloud-connected frontend and the local host daemon.
+
+### 1. Prerequisite: Start the System
+Follow the [Spin-Up Instructions](#️-spin-up-instructions-for-judges) to get the **Backend** and **Frontend** running.
+
+### 2. Launch the Local Daemon
+1.  Open a new terminal in the project root.
+2.  Run the daemon:
+    ```bash
+    python client_daemon.py
+    ```
+3.  **Session Pairing:**
+    *   Look at the Nora Web UI (Top Right). You will see an **ID: session-XXXX**.
+    *   Click the ID to copy it, then paste it into the daemon's terminal prompt.
+    *   Press Enter to use the default backend URL (`http://localhost:8000`).
+4.  **Verification:** You should see a "✓ Daemon Linked Successfully" animation in the web UI.
+
+### 3. Recommended Test Scenarios
+Try these prompts to test various layers of the autonomous engine:
+
+*   **Coding & File I/O:** *"Create a folder on my desktop called 'NoraTest', and write a python script inside it that fetches the current price of Bitcoin."*
+*   **System Diagnostics:** *"My internet feels slow. Can you check my network configuration and ping google to see the latency?"*
+*   **Desktop Management:** *"Look at my desktop. It's a mess. Can you organize all the files into folders like Images, Documents, and Code?"*
+*   **Browser Control:** *"Open Google Chrome and search for 'Google Live Agent Hackathon winners'."*
+*   **Stateful interactions:** *"Open a terminal, cd into my downloads folder, and list the 5 largest files."*
+
+### 4. Troubleshooting the Daemon
+*   **Mac SSL Errors:** If you see `certificate verify failed`, run:
+    `/Applications/Python\ 3.x/Install\ Certificates.command`
+*   **Permission Prompts:** On macOS, the first time Nora tries to control an app (like Chrome) or the Desktop, the OS will ask for permission. Click **Allow** to let the autonomous agent proceed.
+*   **Firewall:** Ensure port `8000` is open for the WebSocket connection.
 
 ---
 
