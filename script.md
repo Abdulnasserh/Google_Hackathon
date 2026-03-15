@@ -1,48 +1,64 @@
-# **Nora: Breaking the Glass Ceiling of AI**
-
-## **## Inspiration: The Prison of the Predefined**
-For years, we’ve been told that software is the ultimate tool for automation. But there was a hidden tax: **the cost of predefined rules.** Before the era of Large Language Models, if you wanted to automate something, you had to predict every single outcome, write every single line of logic, and anticipate every failure. It was exhausting, repetitive, and—frankly—boring.
-
-When LLMs emerged, we saw a rift in the universe. Suddenly, we had "brains" that could reason. But they were trapped. They were locked inside a **Text Box Paradigm**, a digital cage where they could only talk, never touch; only advise, never act. **Nora was born from a singular, dramatic question: What happens when you give the ghost a body?**
-
-We wanted to build something that felt less like a tool and more like a companion—a live, autonomous agent that breaks the barrier of the keyboard and interacts with the world through the human senses: **Voice, Vision, and Sight.**
+# 🎙️ Nora: Breaking the Glass Ceiling of AI
+> **Submission for Google Live Agent Hackathon**
+> *A journey from text-boxes to true autonomous agency.*
 
 ---
 
-## **## What it Does: The Ghost in the Shell**
-Nora is not just an AI; she is a full-scale autonomous presence living on your machine. She is the first of her kind—a voice-first digital assistant that doesn't just suggest a solution, she **becomes** the solution.
-- **She Hears and Speaks:** With sub-second latency, you talk to Nora like a colleague. The conversation is fluid, natural, and alive.
-- **She Sees:** Share your screen, and Nora’s digital eyes scan for error codes, messy desktops, or broken UI elements. She understands your context before you even finish your sentence.
-- **She Acts:** This is the magic. Nora commands a **persistent, stateful "Live Command Engine."** She can reach into your OS, scaffold entire software projects, refactor code, or autonomously organize a chaotic desktop into categorized folders while you watch.
-- **She Adapts:** Whether you are on macOS or Windows, Nora senses her environment and instantly arms herself with a tailored suite of tools to fix your world.
+## 💡 Inspiration: The Prison of the Predefined
+For years, software automation was a tax on human creativity. If you wanted to automate a task, you had to predict every outcome, write every line of logic, and anticipate every failure. It was exhausting and rigid.
+
+When LLMs emerged, we saw a rift in the universe. Suddenly, we had "brains" that could reason—but they were trapped. Locked inside a **Text Box Paradigm**, a digital cage where they could talk but never touch; advise but never act.
+
+**Nora was born from a singular, dramatic question:**
+> *"What happens when you give the ghost a body?"*
+
+We built Nora to be more than a tool. She is a companion—a live, autonomous agent that breaks the keyboard barrier and interacts through the human senses: **Voice, Vision, and Action.**
 
 ---
 
-## **## How We Built It: Orchestrating the Machine**
-Building Nora was like conducting a high-speed digital orchestra:
-- **The Core Intelligence:** We harnessed the raw power of **Google Gemini 2.0 Flash** via the **Google Agentic Development Kit (ADK)**, utilizing bidirectional (Bidi) streaming to create a heartbeat of constant communication.
-- **The Nervous System:** A **FastAPI and WebSocket** pipeline serves as the high-speed bridge, streaming 16kHz audio and vision data to the cloud and back in the blink of an eye.
-- **The Hands (Nora Daemon):** We engineered a custom **Local Daemon** that spawns real, persistent terminal sessions. This isn't just running commands; it’s a living SSH-like state where Nora can navigate your file system and remember where she is.
+## 🌟 What Nora Does: The Ghost in the Shell
+Nora is a full-scale autonomous presence living on your machine. She is a voice-first assistant that doesn't just suggest a solution—she **becomes** the solution.
 
-
----
-
-## **## Challenges We Ran Into: The Great Linking Battle**
-The path to autonomy was not easy. Our greatest dragon was the **"Linking Problem."** How do you make a cloud-based intelligence securely and reliably control a local machine across the vastness of the internet? 
-
-We battled WebSocket drops, session resets, and the nightmare of server-side scaling. There were moments when Nora was a "brain without hands." But we persevered, engineering a custom **localStorage persistence system** and a robust **Tool Interceptor** that finally "clicked" the two worlds together. When Nora finally moved a file on our command for the first time, it felt like magic.
+*   **👂 She Hears & Speaks:** Real-time bidirectional audio with sub-second latency. No "Push-to-Talk" needed—just speak naturally.
+*   **👁️ She Sees:** Share your screen, and Nora scans for error codes, messy desktops, or broken UI elements. She understands your context visually before you finish your sentence.
+*   **🛠️ She Acts:** Nora commands a **persistent, stateful "Live Command Engine."** She can reach into your OS, scaffold projects, refactor code, or organize a chaotic desktop into categorized folders while you watch.
+*   **🌎 She Adapts:** Whether on macOS or Windows, Nora senses her environment and arms herself with a tailored suite of tools to fix your world.
 
 ---
 
-## **## Accomplishments That We're Proud Of**
-We are proud to have shattered the "Chatbot" stereotype. Seeing Nora autonomously navigate a complex folder structure to clean a desktop or hearing her voice as she successfully compiles a Python app she wrote herself is more than just a technical feat—it’s a glimpse into the future of human-computer interaction.
+## 🏗️ How We Built It: Orchestrating the Machine
+Building Nora was like conducting a digital orchestra, blending cloud intelligence with low-level system execution.
+
+### The Architecture Workflow
+![Nora Architecture Diagram](README_assets/architecture_diagram.png)
+
+### The Technical Backbone
+*   **🧠 The Brain (Google ADK & Gemini):** We utilized the **Google Agentic Development Kit (ADK)** to manage complex conversation states while leveraging the native audio capabilities of **Gemini 2.0 Flash**. The Bidi-Streaming API is the heartbeat that makes her feel "Live."
+*   **⚡ The Nervous System (FastAPI):** A high-performance **FastAPI** orchestrator acts as the high-speed bridge, synchronizing audio playback and managing the "Tool Interceptor" queue for real-time local execution.
+*   **🦾 The Hands (Secure Client Daemon):** We engineered a custom **Python Daemon** that spawns real, persistent terminal sessions. This allows Nora to navigate your file system with the continuity and memory of a human technician.
+*   **🎬 The Cinematic UI (React 19):** Built for immersion using **AudioWorklets** for lag-free PCM processing and **Framer Motion** for the "hacker-smooth" Live Activity dashboards.
 
 ---
 
-## **## What We Learned: Beyond the Box**
-We went into this looking for a tool; we came out understanding a new philosophy of agency. We learned that the "Live" aspect of an agent—the ability to interrupt, to see, and to act in real-time—is the difference between a search engine and a partner. We’ve built Nora to be more than just "Live"; we’ve built her to be free of the text box.
+## 🛡️ Challenges: The Great Linking Battle
+The path to autonomy wasn't easy. Our greatest dragon was the **"Linking Problem."** Securely controlling a local machine from the cloud reliably is a massive hurdle.
+
+We battled WebSocket drops and state resets until we engineered a custom **Persistence System** and a robust **Tool Interceptor**. When Nora moved a file on our command for the first time, it didn't feel like a successful build—it felt like **magic.**
 
 ---
 
-## **## What's Next for Nora**
-Nora is only just waking up. Our vision is to give her even deeper "mechanical hands"—advancing her GUI interaction, expanding her system toolbelt, and refining her audio-to-action latency until the boundary between your voice and your computer’s actions completely disappears.
+## 🏆 Accomplishments & Pride
+We have shattered the "Chatbot" stereotype. Hearing Nora’s voice as she autonomously navigates a complex folder structure or seeing her compile a Python app she wrote herself is more than a technical feat—it’s a glimpse into the future.
+
+---
+
+## 🎓 Lessons Learned: Beyond the Box
+We learned that the "Live" aspect of an agent—the ability to interrupt, to see, and to act instantly—is the difference between a **search engine** and a **partner.** Nora is free of the text box, and we are never going back.
+
+---
+
+## 🚀 What's Next for Nora
+Nora is only just waking up. We are advancing her GUI interaction capabilities and expanding her system toolbelt until the boundary between your voice and your computer’s actions completely disappears.
+
+---
+*Built with ❤️ for the Google Live Agent Hackathon.*
