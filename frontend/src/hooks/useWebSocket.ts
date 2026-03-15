@@ -70,7 +70,7 @@ export interface ToolCallActivity {
     name: string;
     args?: Record<string, unknown>;
     timestamp: Date;
-    status: 'executing' | 'completed';
+    status: 'executing' | 'completed' | 'failed';
 }
 
 // ---------------------------------------------------------------------------
@@ -84,6 +84,7 @@ export function useWebSocket() {
     const [currentTranscription, setCurrentTranscription] = useState("");
     const [activities, setActivities] = useState<ToolCallActivity[]>([]);
     const [daemonConnected, setDaemonConnected] = useState(false);
+    const daemonConnectedRef = useRef(false);
 
     const wsRef = useRef<WebSocket | null>(null);
     const statusWsRef = useRef<WebSocket | null>(null);
@@ -283,7 +284,7 @@ export function useWebSocket() {
                             name: functionName,
                             args: functionArgs,
                             timestamp: new Date(),
-                            status: 'executing'
+                            status: daemonConnectedRef.current ? 'executing' : 'failed'
                         }]);
                     }
 
@@ -479,6 +480,7 @@ export function useWebSocket() {
                     setStatus("connecting");
                     reconnectAttemptsRef.current = attempt;
                     reconnectTimerRef.current = setTimeout(() => {
+                        // eslint-disable-next-line
                         connect();
                     }, delay);
                 } else {
@@ -751,11 +753,31 @@ export function useWebSocket() {
                     const data = JSON.parse(event.data);
                     if (data.type === "daemon_status") {
                         setDaemonConnected(data.status === "connected");
+                        daemonConnectedRef.current = data.status === "connected";
                         if (data.status === "connected") {
                             toast.success("Nora has paired with your local daemon", { duration: 3000 });
+                            
+                            // Play premium daemon connection chime
+                            try {
+                                const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                                const osc = audioCtx.createOscillator();
+                                osc.type = "square";
+                                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                                const gainNode = audioCtx.createGain();
+                                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                                gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+                                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                                osc.connect(gainNode);
+                                gainNode.connect(audioCtx.destination);
+                                osc.start();
+                                osc.stop(audioCtx.currentTime + 0.3);
+                            } catch (e) {
+                                console.error("[WS] Failed to play daemon connect sound:", e);
+                            }
                         } else if (data.status === "disconnected") {
                             // Don't toast on initial idle, only if we were connected
                             setDaemonConnected(false);
+                            daemonConnectedRef.current = false;
                         }
                     }
                 } catch (e) {

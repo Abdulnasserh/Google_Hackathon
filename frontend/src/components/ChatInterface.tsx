@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
     Mic,
     ArrowLeft,
-    FileText,
     Keyboard,
     X,
     Activity,
@@ -59,7 +58,16 @@ export function ChatInterface() {
     // Wrap sendAudio to auto-interrupt agent when user speaks
     const sendAudioWithInterrupt = useCallback((pcmData: ArrayBuffer) => {
         if (isAgentSpeaking) {
-            interruptAgent();
+            const pcm16 = new Int16Array(pcmData);
+            let sum = 0;
+            for (let i = 0; i < pcm16.length; i++) {
+                sum += Math.abs(pcm16[i]);
+            }
+            const avg = sum / pcm16.length;
+            // threshold for voice activity ~ 1500 (max is 32768)
+            if (avg > 1500) {
+                interruptAgent();
+            }
         }
         sendAudio(pcmData);
     }, [sendAudio, isAgentSpeaking, interruptAgent]);
@@ -106,12 +114,15 @@ export function ChatInterface() {
 
     const handleSendText = useCallback(() => {
         if (!textInput.trim()) return;
+        if (isAgentSpeaking) {
+            interruptAgent();
+        }
         sendText(textInput);
         setTextInput("");
         if (!isConnected) {
             connect();
         }
-    }, [textInput, sendText, isConnected, connect]);
+    }, [textInput, sendText, isConnected, connect, isAgentSpeaking, interruptAgent]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -132,6 +143,15 @@ export function ChatInterface() {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, currentTranscription]);
+
+    const handleBackTap = useCallback(() => {
+        if (isAgentSpeaking) interruptAgent();
+        if (isRecording || isConnected) {
+            stopRecording();
+            disconnect();
+        }
+        setInputMode("voice");
+    }, [isAgentSpeaking, interruptAgent, isRecording, isConnected, stopRecording, disconnect, setInputMode]);
 
     // View: HOME DASHBOARD (Idle)
     if (!isListening && inputMode === "voice") {
@@ -281,7 +301,7 @@ export function ChatInterface() {
             {/* Top App Bar */}
             <div className="flex justify-between items-center px-6 pt-10 pb-4 z-20 max-w-5xl mx-auto w-full">
                 <button
-                    onClick={handleMicTap}
+                    onClick={handleBackTap}
                     className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5 text-white/70" />
@@ -296,9 +316,7 @@ export function ChatInterface() {
                         </div>
                     )}
                 </div>
-                <button className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors">
-                    <FileText className="w-5 h-5 text-white/70" />
-                </button>
+                <div className="w-10 h-10"></div> {/* Spacer for alignment */}
             </div>
 
             {/* Main Area: Mixed Text and Voice mode */}
@@ -350,19 +368,22 @@ export function ChatInterface() {
                                 {activities.map((activity) => (
                                     <div key={activity.id} className={`flex flex-col gap-1.5 ${activity.status === 'executing' ? 'animate-fade-in-up' : 'opacity-60'}`}>
                                         <div className="flex items-center justify-between">
-                                            <span className={`text-[10px] font-mono uppercase ${activity.status === 'executing' ? 'text-sky-400' : 'text-emerald-400'}`}>
-                                                {activity.status === 'executing' ? 'Tool Executing' : 'Tool'}
+                                            <span className={`text-[10px] font-mono uppercase ${activity.status === 'executing' ? 'text-sky-400' : activity.status === 'failed' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                {activity.status === 'executing' ? 'Tool Executing' : activity.status === 'failed' ? 'Execution Failed' : 'Tool Completed'}
                                             </span>
-                                            <span className={`text-[9px] font-mono ${activity.status === 'executing' ? 'text-sky-400/50 animate-pulse' : 'text-white/30'}`}>
+                                            <span className={`text-[9px] font-mono ${activity.status === 'executing' ? 'text-sky-400/50 animate-pulse' : activity.status === 'failed' ? 'text-red-400/50' : 'text-white/30'}`}>
                                                 {activity.status === 'executing' ? 'Now' : activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase().replace('am', '').replace('pm', '').trim()}
                                             </span>
                                         </div>
-                                        <div className={`text-[13px] font-mono flex items-center gap-2 px-2.5 py-1.5 rounded-lg relative overflow-hidden ${activity.status === 'executing' ? 'text-sky-400 bg-sky-400/10 border border-sky-400/30 shadow-[0_0_10px_rgba(56,189,248,0.1)]' : 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20'}`}>
+                                        <div className={`text-[13px] font-mono flex items-center gap-2 px-2.5 py-1.5 rounded-lg relative overflow-hidden ${activity.status === 'executing' ? 'text-sky-400 bg-sky-400/10 border border-sky-400/30 shadow-[0_0_10px_rgba(56,189,248,0.1)]' : activity.status === 'failed' ? 'text-red-400 bg-red-400/10 border border-red-400/20' : 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20'}`}>
                                             {activity.status === 'executing' && (
                                                 <>
                                                     <div className="absolute bottom-0 left-0 h-[1px] bg-sky-400 w-full animate-[progress_2s_ease-in-out_infinite]"></div>
                                                     <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(56,189,248,0.8)]"></span>
                                                 </>
+                                            )}
+                                            {activity.status === 'failed' && (
+                                                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
                                             )}
                                             TechMCP({activity.name})
                                         </div>
@@ -372,6 +393,11 @@ export function ChatInterface() {
                                                     ? `> ${activity.args.command || activity.args.cmd || '...'}`
                                                     : JSON.stringify(activity.args)
                                                 }
+                                            </div>
+                                        )}
+                                        {activity.status === 'failed' && (
+                                            <div className="text-[9px] font-mono text-red-400/80 ml-2">
+                                                ❌ Daemon offline. Command not sent.
                                             </div>
                                         )}
                                     </div>
@@ -500,6 +526,15 @@ export function ChatInterface() {
                             >
                                 <ArrowUpRight className="w-4 h-4" />
                             </button>
+                            {isAgentSpeaking && (
+                                <button
+                                    onClick={interruptAgent}
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors ml-1"
+                                    title="Stop Agent Speaking"
+                                >
+                                    <div className="w-3 h-3 bg-current rounded-sm" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -542,13 +577,23 @@ export function ChatInterface() {
                             >
                                 <MonitorUp className={`w-5 h-5 ${isScreenSharing ? 'animate-pulse' : ''}`} />
                             </button>
-                            <button
-                                onClick={handleMicTap}
-                                className="w-12 h-12 rounded-full border border-white/10 bg-[#12121a]/80 backdrop-blur-xl flex items-center justify-center hover:bg-white/10 hover:border-white/20 hover:text-rose-400 transition-colors group shadow-lg"
-                                title="Stop Agent"
-                            >
-                                <X className="w-5 h-5 text-white/50 group-hover:text-rose-400" />
-                            </button>
+                            {isAgentSpeaking ? (
+                                <button
+                                    onClick={interruptAgent}
+                                    className="w-12 h-12 rounded-full border border-rose-500/30 bg-rose-500/10 backdrop-blur-xl flex items-center justify-center hover:bg-rose-500 hover:border-rose-500 text-rose-400 hover:text-white transition-colors group shadow-lg"
+                                    title="Stop Agent Speaking"
+                                >
+                                    <div className="w-4 h-4 bg-current rounded-sm" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleMicTap}
+                                    className="w-12 h-12 rounded-full border border-white/10 bg-[#12121a]/80 backdrop-blur-xl flex items-center justify-center hover:bg-white/10 hover:border-white/20 hover:text-rose-400 transition-colors group shadow-lg"
+                                    title="Stop Agent"
+                                >
+                                    <X className="w-5 h-5 text-white/50 group-hover:text-rose-400" />
+                                </button>
+                            )}
                         </div>
                     </>
                 )}
