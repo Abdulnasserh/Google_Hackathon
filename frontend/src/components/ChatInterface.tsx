@@ -143,6 +143,14 @@ export function ChatInterface() {
                                 <span className="text-[10px] text-emerald-400 font-medium tracking-wider uppercase flex items-center gap-1.5 mt-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Systems Online
                                 </span>
+                            ) : isVoiceConnected ? (
+                                <span className="text-[10px] text-amber-400 font-medium tracking-wider uppercase flex items-center gap-1.5 mt-0.5" title="Connected to AI, but daemon is offline">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Voice Only (No Target)
+                                </span>
+                            ) : daemonConnected ? (
+                                <span className="text-[10px] text-sky-400/90 font-medium tracking-wider uppercase flex items-center gap-1.5 mt-0.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span> Daemon Ready
+                                </span>
                             ) : (
                                 <span className="text-[10px] text-white/50 font-medium tracking-wider uppercase flex items-center gap-1.5 mt-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-white/30"></span> Offline / Idle

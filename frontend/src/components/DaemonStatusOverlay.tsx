@@ -5,7 +5,7 @@
  * with a glitch-style reveal and particle burst effect.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Shield, Wifi, CheckCircle2 } from "lucide-react";
 
 interface DaemonStatusOverlayProps {
@@ -16,12 +16,12 @@ interface DaemonStatusOverlayProps {
 export function DaemonStatusOverlay({ daemonConnected, sessionId }: DaemonStatusOverlayProps) {
     const [showCeremony, setShowCeremony] = useState(false);
     const [ceremonyPhase, setCeremonyPhase] = useState(0);
-    const [hasShownOnce, setHasShownOnce] = useState(false);
+    const hasShownOnce = useRef(false);
 
     useEffect(() => {
-        if (daemonConnected && !hasShownOnce) {
+        if (daemonConnected && !hasShownOnce.current) {
             setShowCeremony(true);
-            setHasShownOnce(true);
+            hasShownOnce.current = true;
 
             // Phase 1: Shield icon
             setCeremonyPhase(1);
@@ -45,7 +45,7 @@ export function DaemonStatusOverlay({ daemonConnected, sessionId }: DaemonStatus
                 clearTimeout(t4);
             };
         }
-    }, [daemonConnected, hasShownOnce]);
+    }, [daemonConnected]);
 
     if (!showCeremony) return null;
 
