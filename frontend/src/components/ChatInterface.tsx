@@ -220,18 +220,20 @@ export function ChatInterface() {
                 {/* Bottom Section Container */}
                 <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 pb-28 px-6">
                     {/* Suggested Queries */}
-                    <div className="w-full overflow-x-auto hide-scrollbar flex gap-3 snap-x justify-center">
-                        {[
-                            { icon: "📝", text: "Write a letter to my friend" },
-                            { icon: "💻", text: "Create a new Python project" },
-                            { icon: "🧹", text: "Clean up system temp files" },
-                            { icon: "🎵", text: "Open YouTube in Chrome" },
-                        ].map((q, i) => (
-                            <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 flex items-center gap-2.5" onClick={async () => { await connect(); try { await startRecording(); } catch {} sendText(q.text); }}>
-                                <span>{q.icon}</span>
-                                <span>{q.text}</span>
-                            </div>
-                        ))}
+                    <div className="w-full overflow-x-auto hide-scrollbar">
+                        <div className="flex gap-3 snap-x sm:justify-center pb-2 px-1">
+                            {[
+                                { icon: "📝", text: "Write a letter to my friend" },
+                                { icon: "💻", text: "Create a new Python project" },
+                                { icon: "🧹", text: "Clean up system temp files" },
+                                { icon: "🎵", text: "Open YouTube in Chrome" },
+                            ].map((q, i) => (
+                                <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg flex items-center gap-2.5 shrink-0" onClick={async () => { await connect(); try { await startRecording(); } catch {} sendText(q.text); }}>
+                                    <span>{q.icon}</span>
+                                    <span>{q.text}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
 
