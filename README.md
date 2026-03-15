@@ -33,29 +33,7 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 
 Nora's architecture is a state-of-the-art **bidi-streaming, hybrid cloud-local topology**. It is engineered to achieve sub-second latency for natural voice interactions while safely delegating root execution to the user's local operating system.
 
-```mermaid
-architecture-beta
-    group client(internet)[React Client]
-    group backend(cloud)[FastAPI Server]
-    group ai(cloud)[Google AI]
-    group host(server)[User PC]
-
-    service ui(internet)[Web Interface] in client
-    service handler(server)[WebSocket Handler] in backend
-    service queue(disk)[Live Request Queue] in backend
-    service events(disk)[Agent Events] in backend
-    service adk(server)[Google ADK Bridge] in backend
-    service gemini(cloud)[Gemini 2.5 Live API] in ai
-    service daemon(server)[Nora Client Daemon] in host
-
-    ui:R -- L:handler
-    handler:R -- L:queue
-    queue:B -- T:adk
-    adk:L -- R:events
-    events:T -- B:handler
-    adk:R -- L:gemini
-    adk:B -- T:daemon
-```
+![Nora Architecture Diagram](README_assets/architecture_diagram.png)
 
 ### 1. Fast, Bidirectional Streaming Pipeline (Google ADK)
 Inspired by the **Google Agent Development Kit (ADK)** reference architecture, we discarded traditional request/response paradigms in favor of pure WebSocket streams. 
