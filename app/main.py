@@ -267,13 +267,20 @@ async def websocket_endpoint(
     # Phase 2: Session Initialization
     # =====================================================================
 
-    # Configure streaming behavior
+    # Configure streaming behavior with voice interruption enabled
     run_config = RunConfig(
         streaming_mode=StreamingMode.BIDI,
         response_modalities=["AUDIO"],
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
         session_resumption=types.SessionResumptionConfig(),
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                    voice_name="Puck" # High-quality premium voice
+                )
+            )
+        )
     )
 
     # Get or create ADK session (handles both new and returning users)

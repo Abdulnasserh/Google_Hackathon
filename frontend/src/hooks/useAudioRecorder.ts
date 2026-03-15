@@ -53,7 +53,12 @@ export function useAudioRecorder(onAudioData: (pcmData: ArrayBuffer) => void) {
 
             // Request microphone access
             const stream = await navigator.mediaDevices.getUserMedia({
-                audio: { channelCount: 1 },
+                audio: { 
+                    channelCount: 1,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
             });
 
             const source = audioContext.createMediaStreamSource(stream);

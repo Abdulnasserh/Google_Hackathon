@@ -4,7 +4,9 @@ import websockets
 import platform
 import atexit
 import sys
-
+import os
+import ssl
+import certifi
 from bidi_streaming_agent.tools import mac_tools, windows_tools
 from bidi_streaming_agent.tools.terminal_session import (
     terminal_manager,
@@ -91,10 +93,18 @@ async def daemon_loop(url: str, session_id: str):
 
     terminal_tool_map = {t.__name__: t for t in ALL_TERMINAL_TOOLS}
 
+    # Create a robust SSL context using certifi to avoid Mac certificate errors
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+
     while True:
         try:
             UI.info(f"Attempting secure connection to Nora...")
-            async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as websocket:
+            async with websockets.connect(
+                ws_url, 
+                ping_interval=20, 
+                ping_timeout=20,
+                ssl=ssl_context if ws_url.startswith("wss") else None
+            ) as websocket:
                 UI.success(f"Uplink Established! {UI.BOLD}Nora is now your Active Assistant.{UI.RESET}")
                 
                 # Send initial presence payload

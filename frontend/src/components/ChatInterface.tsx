@@ -60,8 +60,8 @@ export function ChatInterface() {
                 sum += Math.abs(pcm16[i]);
             }
             const avg = sum / pcm16.length;
-            // threshold for voice activity ~ 1500 (max is 32768)
-            if (avg > 1500) {
+            // threshold for voice activity ~ 500 (much more sensitive for interruptions)
+            if (avg > 500) {
                 interruptAgent();
             }
         }
