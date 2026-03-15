@@ -27,62 +27,27 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 
 ---
 
+---
+
 ## 🏗️ Architecture & System Design
 
-The application consists of a **React frontend**, a **FastAPI WebSocket backend**, and the **Google ADK** routing to the Gemini model.
+Nora leverages a **hybrid cloud-local architecture**. The intelligence resides in **Google Cloud (Vertex AI)**, while the execution happens locally through a secure **Client Daemon**.
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                          FRONTEND (React UI)                             │
-│       Cinematic "Live Activity" Dashboard & Terminal Log Feed            │
-└──────────────────────────────┬───────────────────────────────────────────┘
-                               │ WebSocket (JSON / Audio PCM)
-┌──────────────────────────────▼───────────────────────────────────────────┐
-│                          CLOUD RUN BACKEND                               │
-│                   FastAPI + Google ADK + Gemini Flash                    │
-│                                                                          │
-│  ┌───────────────────────────▼────────────┐                              │
-│  │              WebSocket Server             │                           │
-│  │     Routes Bidi-streaming & Tool Calls    │                           │
-│  └─────────────────────┬───────────────────┘                             │
-│                        │       ▲                                         │
-│  ┌─────────────────────▼───────┴──────────┐                              │
-│  │             Root Agent (Nora)             │                           │
-│  │     Instructed in "Autonomous Mode"       │                           │
-│  └─────────────────────┬───────────────────┘                             │
-└────────────────────────┼─────────────────────────────────────────────────┘
-                         │ WebSocket (Secure Command Tunnel)
-┌────────────────────────▼─────────────────────────────────────────────────┐
-│                       LOCAL CLIENT DAEMON                                │
-│                   Running on User's PC (Mac/Win)                         │
-│                                                                          │
-│   ┌────────────────────────────────────────────────────────────────┐     │
-│   │                 TerminalSessionManager (PTY)                   │     │
-│   │                                                                │     │
-│   │  ┌──────────────┐     ┌──────────────┐      ┌──────────────┐   │     │
-│   │  │ execute_cmd()│     │ send_input() │      │ get_output() │   │     │
-│   │  │ (e.g. bash)  │ ◄─► │ (e.g. "y\n") │ ◄──► │ (stdout log) │   │     │
-│   │  └──────────────┘     └──────────────┘      └──────────────┘   │     │
-│   └──────────┬────────────────────────────────────────┬────────────┘     │
-│              │                                        │                  │
-│   ┌──────────▼────────────────┐          ┌────────────▼──────────────┐   │
-│   │  System Services / WiFi   │          │  Filesystem / Processes   │   │
-│   └───────────────────────────┘          └───────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+![Nora Architecture Diagram](README_assets/architecture_diagram.png)
 
-### 1. Persistent Autonomous Execution Architecture
+### 1. Persistent Autonomous Execution (The "Live Command Engine")
 The crown jewel of Nora is her **Agentic execution architecture**. We moved beyond simple hardcoded diagnostic scripts. The AI is essentially a "ghost in the machine":
 - **Stateful Terminals:** The client daemon spawns a real, persistent `powershell.exe` or `/bin/bash` session. Directory changes (`cd`) and variables carry over between commands.
 - **Interactive Prompts:** If a process asks *"Are you sure? [y/N]"*, the backend does not hang. Nora reads the standard output stream, generates the answer `"y"`, and pushes it to standard input dynamically.
 - **Unrestricted Problem Solving:** Because she can synthesize raw shell commands, she can fix issues the developers never explicitly anticipated.
+- **Desktop Organization:** Nora can now "See" a messy desktop and autonomously arrange it into categorized folders (Screenshots, Images, Documents) using her newly added filesystem tools.
 - **Safety First:** The daemon implements a rigorous blocklist preventing destructive patterns (`rm -rf /`, `format`, password scraping).
 
 ### 2. Cinematic UX & Real-Time Feedback
 We've broken the "textbox paradigm". When the user asks Nora to fix their Bluetooth:
 - They don't just get a text reply saying "I fixed it."
 - A **Live Activity** dashboard slides in, showing a cinematic stream of the exact CLI commands Nora is executing on their machine (`> launchctl kickstart -k system/com.apple.bluetoothd`).
-- A high-fidelity "Daemon Connection Ceremony" completes the hacker-style UX when the local script pairs with the cloud.
+- **OS-Aware Onboarding:** The frontend detects the user's OS and provides tailored, one-click download links for the **Nora Daemon (.zip)** directly from the cloud backend.
 
 ---
 
