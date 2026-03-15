@@ -9,7 +9,8 @@ import {
     Download,
     Shield,
     Cpu,
-    Terminal
+    Terminal,
+    Copy
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -167,17 +168,34 @@ export function ChatInterface() {
                                     <span className="w-1.5 h-1.5 rounded-full bg-white/30"></span> Offline / Idle
                                 </span>
                             )}
-                            <div className="mt-1 flex items-center gap-2">
-                                <span className="text-[9px] text-zinc-500 font-mono">Daemon ID: {sessionId}</span>
-                                <div className="flex gap-1.5 border-l border-white/10 pl-2">
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download Windows Daemon from GitHub">
-                                        <Download className="w-2.5 h-2.5" /> Win
+                            <div className="mt-1.5 flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 group/id cursor-pointer bg-white/[0.03] hover:bg-white/[0.08] px-2 py-1 rounded transition-all w-fit" 
+                                     onClick={() => {
+                                         navigator.clipboard.writeText(sessionId);
+                                         toast.success("Daemon ID copied to clipboard");
+                                     }}
+                                     title="Click to copy Session ID">
+                                    <span className="text-[9px] text-zinc-500 font-mono group-hover/id:text-sky-300 transition-colors uppercase">ID: {sessionId}</span>
+                                    <Copy className="w-2.5 h-2.5 text-zinc-600 group-hover/id:text-sky-400" />
+                                </div>
+                                <div className="flex items-center gap-1.5 group/url cursor-pointer bg-white/[0.03] hover:bg-white/[0.08] px-2 py-1 rounded transition-all w-fit"
+                                     onClick={() => {
+                                         const host = window.location.origin;
+                                         navigator.clipboard.writeText(host);
+                                         toast.success("Backend URL copied");
+                                     }}
+                                     title="Click to copy Backend URL">
+                                    <span className="text-[9px] text-zinc-600 font-mono group-hover/url:text-sky-300 transition-colors truncate max-w-[120px]">
+                                        {window.location.origin}
+                                    </span>
+                                    <Copy className="w-2.5 h-2.5 text-zinc-700 group-hover/url:text-sky-500" />
+                                </div>
+                                <div className="flex gap-1.5 pt-1 mt-1 border-t border-white/5">
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[8px] flex items-center gap-0.5 text-sky-400/60 hover:text-sky-300 bg-sky-500/5 hover:bg-sky-500/10 px-1 py-0.5 rounded transition-colors">
+                                        <Download className="w-2 h-2" /> Win
                                     </a>
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Intel Daemon from GitHub">
-                                        <Download className="w-2.5 h-2.5" /> Mac (Intel)
-                                    </a>
-                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[9px] flex items-center gap-0.5 text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded transition-colors" title="Download macOS Apple Silicon Daemon from GitHub">
-                                        <Download className="w-2.5 h-2.5" /> Mac (Silicon)
+                                    <a href="https://github.com/Abdulnasserh/Google_Hackathon/releases/tag/NORA-DAEMONS" target="_blank" rel="noopener noreferrer" className="text-[8px] flex items-center gap-0.5 text-sky-400/60 hover:text-sky-300 bg-sky-500/5 hover:bg-sky-500/10 px-1 py-0.5 rounded transition-colors">
+                                        <Download className="w-2 h-2" /> Mac
                                     </a>
                                 </div>
                             </div>
