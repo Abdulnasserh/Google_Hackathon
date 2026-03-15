@@ -221,7 +221,7 @@ export function ChatInterface() {
                 <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 pb-28 px-6">
                     {/* Suggested Queries */}
                     <div className="w-full overflow-x-auto hide-scrollbar">
-                        <div className="flex gap-3 snap-x sm:justify-center pb-2 px-1">
+                        <div className="flex gap-3 snap-x pb-2 px-1">
                             {[
                                 { icon: "📝", text: "Write a letter to my friend" },
                                 { icon: "💻", text: "Create a new Python project" },
