@@ -33,52 +33,7 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 
 Nora's architecture is a state-of-the-art **bidi-streaming, hybrid cloud-local topology**. It is engineered to achieve sub-second latency for natural voice interactions while safely delegating root execution to the user's local operating system.
 
-```mermaid
-graph LR
-    classDef client fill:#E0EFFF,stroke:#4DACFF,stroke-width:2px,color:#000;
-    classDef server fill:#E6F4EA,stroke:#34A853,stroke-width:2px,color:#000;
-    classDef google fill:#F3E8FD,stroke:#A142F4,stroke-width:2px,color:#000;
-    classDef local fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#000;
-    classDef inner fill:#FFF,stroke:#ccc,stroke-width:1px,color:#000;
-
-    subgraph Client ["Client - Frontend (React)"]
-        UI["Client Application<br/>(16kHz PCM + UI)"]:::inner
-    end
-    class Client client
-
-    subgraph Backend ["Server - Backend (FastAPI on Cloud Run)"]
-        direction TB
-        WS["websocket_handler<br/>(UT, SS, DT)"]:::inner
-        Q1["live_request_queue"]:::inner
-        ADK["Agent Development Kit<br/>(ADK)"]:::inner
-        EV["Events"]:::inner
-        
-        WS --> Q1
-        Q1 --> ADK
-        ADK --> EV
-        EV --> WS
-    end
-    class Backend server
-
-    subgraph AI ["Google AI"]
-        Gemini["Gemini Live API"]:::inner
-    end
-    class AI google
-
-    subgraph LocalHost ["Local Host - Client Daemon"]
-        Daemon["Nora Daemon<br/>(Assistant & PTY Server)"]:::inner
-        Shell["Interactive Shell<br/>(Bash / PowerShell)"]:::inner
-        Tools["Assistant Tools<br/>(File I/O, Web, Compiler)"]:::inner
-        
-        Daemon --> Shell
-        Daemon --> Tools
-    end
-    class LocalHost local
-
-    UI <-->|"WebSocket (Audio & Commands)"| WS
-    ADK <-->|"Bidi Streaming"| Gemini
-    ADK <-->|"Remote Tool Call / Execution Results"| Daemon
-```
+![Nora Architecture Diagram](README_assets/architecture_diagram.png)
 
 ### 1. Fast, Bidirectional Streaming Pipeline (Google ADK)
 Inspired by the **Google Agent Development Kit (ADK)** reference architecture, we discarded traditional request/response paradigms in favor of pure WebSocket streams. 
