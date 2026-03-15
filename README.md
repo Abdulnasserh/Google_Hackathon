@@ -176,4 +176,4 @@ Nora is designed as a hybrid autonomous agent. While her "hands"—the local too
 
 ---
 
-*Built with ❤️ for the Google Live Agent Hackathon. #GeminiLiveAgentChallenge*
+*Built with ❤️. #GeminiLiveAgentChallenge*
