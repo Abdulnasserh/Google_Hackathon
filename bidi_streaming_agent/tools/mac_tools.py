@@ -745,6 +745,353 @@ def organize_directory(path: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Personal Assistant Tools — File I/O, URLs, Coding, Clipboard
+# ---------------------------------------------------------------------------
+
+def write_file(file_path: str, content: str) -> dict:
+    """
+    Write content to a file on the user's computer. Creates the file if it
+    doesn't exist, or overwrites it if it does. Parent directories are created
+    automatically.
+
+    Use this for ANY writing task:
+    - Writing documents: letters, essays, study guides, notes
+    - Writing code: Python scripts, HTML pages, JavaScript files
+    - Writing config files, CSV data, markdown notes, etc.
+
+    Args:
+        file_path: Where to save the file (e.g. '~/Desktop/letter.txt',
+                   '~/Documents/app.py'). Supports ~ for home directory.
+        content: The full text content to write to the file.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(file_path)
+    parent = os.path.dirname(expanded)
+    try:
+        if parent and not os.path.exists(parent):
+            os.makedirs(parent, exist_ok=True)
+        with open(expanded, "w", encoding="utf-8") as f:
+            f.write(content)
+        size = os.path.getsize(expanded)
+        return {"status": "success", "output": f"File written: {expanded} ({size} bytes)"}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to write file: {e}"}
+
+
+def read_file(file_path: str, max_lines: int = 200) -> dict:
+    """
+    Read the contents of a file on the user's computer. Use this to view
+    documents, code files, config files, logs, etc.
+
+    Args:
+        file_path: Path to the file (e.g. '~/Desktop/notes.txt'). Supports ~.
+        max_lines: Maximum number of lines to read (default 200, to prevent
+                   overwhelming output for very large files).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(file_path)
+    try:
+        if not os.path.exists(expanded):
+            return {"status": "error", "output": f"File not found: {expanded}"}
+        if not os.path.isfile(expanded):
+            return {"status": "error", "output": f"Path is not a file: {expanded}"}
+        size = os.path.getsize(expanded)
+        with open(expanded, "r", encoding="utf-8", errors="replace") as f:
+            lines = []
+            for i, line in enumerate(f):
+                if i >= max_lines:
+                    lines.append(f"\n... [TRUNCATED: file has more than {max_lines} lines] ...")
+                    break
+                lines.append(line.rstrip("\n"))
+        return {"status": "success", "output": f"[{expanded} — {size} bytes]\n" + "\n".join(lines)}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to read file: {e}"}
+
+
+def append_to_file(file_path: str, content: str) -> dict:
+    """
+    Append content to the end of an existing file. Use this to add lines to
+    logs, add items to lists, append data to CSVs, etc.
+
+    Args:
+        file_path: Path to the file (e.g. '~/Desktop/todo.txt'). Supports ~.
+        content: The text to append to the end of the file.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(file_path)
+    try:
+        with open(expanded, "a", encoding="utf-8") as f:
+            f.write(content)
+        return {"status": "success", "output": f"Appended {len(content)} chars to {expanded}"}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to append: {e}"}
+
+
+def open_url(url: str) -> dict:
+    """
+    Open a URL in the user's default web browser. Use this to open websites,
+    search results, YouTube, documentation, Google Docs, etc.
+
+    Args:
+        url: The full URL to open (e.g. 'https://google.com',
+             'https://youtube.com/results?search_query=lofi+music').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["open", url], timeout=10)
+    return {"status": "success", "output": f"Opened URL in browser: {url}. {output}"}
+
+
+def search_files(search_path: str, pattern: str) -> dict:
+    """
+    Search for files by name within a directory tree. Use this to find
+    documents, photos, code files, etc. on the user's machine.
+
+    Args:
+        search_path: The starting directory to search (e.g. '~', '~/Documents').
+        pattern: The filename pattern to search for (e.g. '*.pdf', 'report*', '*.py').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(search_path)
+    output = _run(["find", expanded, "-maxdepth", "5", "-name", pattern, "-type", "f"], timeout=15)
+    lines = output.strip().split("\n")
+    if len(lines) > 30:
+        output = "\n".join(lines[:30]) + f"\n\n... ({len(lines) - 30} more results)"
+    return {"status": "success", "output": output}
+
+
+def clipboard_copy(text: str) -> dict:
+    """
+    Copy text to the system clipboard. Use this to prepare text for the user
+    to paste somewhere (e.g., an email body, a search query, a code snippet).
+
+    Args:
+        text: The text to copy to the clipboard.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    try:
+        process = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
+        process.communicate(text.encode("utf-8"))
+        return {"status": "success", "output": f"Copied {len(text)} chars to clipboard."}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to copy: {e}"}
+
+
+def clipboard_paste() -> dict:
+    """
+    Get the current contents of the system clipboard. Use this to see
+    what the user has copied, or to work with clipboard data.
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    output = _run(["pbpaste"], timeout=5)
+    return {"status": "success", "output": f"Clipboard contents:\n{output}"}
+
+
+def take_screenshot(save_path: str = "~/Desktop/screenshot.png") -> dict:
+    """
+    Take a screenshot of the user's screen and save it to a file. Use this
+    when you need to see what the user is looking at, or when they ask you
+    to capture their screen.
+
+    Args:
+        save_path: Where to save the screenshot (default: ~/Desktop/screenshot.png).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(save_path)
+    output = _run(["screencapture", "-x", expanded], timeout=10)
+    if os.path.exists(expanded):
+        size = os.path.getsize(expanded)
+        return {"status": "success", "output": f"Screenshot saved: {expanded} ({size} bytes). {output}"}
+    return {"status": "error", "output": f"Screenshot may have failed. {output}"}
+
+
+def create_project(project_name: str, language: str = "python", path: str = "~/Desktop") -> dict:
+    """
+    Scaffold a new coding project with a proper folder structure.
+    Creates the project directory, a main source file, and a README.
+
+    Supported languages: python, javascript, html, java, c, go, rust
+
+    Args:
+        project_name: Name of the project (e.g. 'my-web-app', 'calculator').
+        language: Programming language (default 'python').
+        path: Where to create the project (default '~/Desktop').
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+
+    expanded = os.path.expanduser(os.path.join(path, project_name))
+    if os.path.exists(expanded):
+        return {"status": "error", "output": f"Directory already exists: {expanded}"}
+
+    templates = {
+        "python": {
+            "main_file": "main.py",
+            "main_content": '"""Main entry point for {name}."""\n\n\ndef main():\n    print("Hello from {name}!")\n\n\nif __name__ == "__main__":\n    main()\n',
+            "extra_files": {"requirements.txt": "# Add your dependencies here\n"},
+        },
+        "javascript": {
+            "main_file": "index.js",
+            "main_content": '// {name} - Main entry point\n\nconsole.log("Hello from {name}!");\n',
+            "extra_files": {
+                "package.json": '{{\n  "name": "{name}",\n  "version": "1.0.0",\n  "main": "index.js",\n  "scripts": {{\n    "start": "node index.js"\n  }}\n}}\n'
+            },
+        },
+        "html": {
+            "main_file": "index.html",
+            "main_content": '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>{name}</title>\n    <link rel="stylesheet" href="style.css">\n</head>\n<body>\n    <h1>Welcome to {name}</h1>\n    <script src="script.js"></script>\n</body>\n</html>\n',
+            "extra_files": {
+                "style.css": "/* {name} styles */\nbody {{\n    font-family: system-ui, sans-serif;\n    margin: 2rem;\n}}\n",
+                "script.js": '// {name} scripts\nconsole.log("{name} loaded!");\n',
+            },
+        },
+        "java": {
+            "main_file": "Main.java",
+            "main_content": 'public class Main {{\n    public static void main(String[] args) {{\n        System.out.println("Hello from {name}!");\n    }}\n}}\n',
+            "extra_files": {},
+        },
+        "c": {
+            "main_file": "main.c",
+            "main_content": '#include <stdio.h>\n\nint main() {{\n    printf("Hello from {name}!\\n");\n    return 0;\n}}\n',
+            "extra_files": {
+                "Makefile": "CC=gcc\nCFLAGS=-Wall\n\nall: main\n\nmain: main.c\n\t$(CC) $(CFLAGS) -o {name} main.c\n\nclean:\n\trm -f {name}\n"
+            },
+        },
+        "go": {
+            "main_file": "main.go",
+            "main_content": 'package main\n\nimport "fmt"\n\nfunc main() {{\n\tfmt.Println("Hello from {name}!")\n}}\n',
+            "extra_files": {},
+        },
+        "rust": {
+            "main_file": "main.rs",
+            "main_content": 'fn main() {{\n    println!("Hello from {name}!");\n}}\n',
+            "extra_files": {},
+        },
+    }
+
+    lang = language.lower()
+    if lang not in templates:
+        return {"status": "error", "output": f"Unsupported language '{language}'. Supported: {', '.join(templates.keys())}"}
+
+    tmpl = templates[lang]
+    try:
+        os.makedirs(expanded, exist_ok=True)
+
+        # Main file
+        main_path = os.path.join(expanded, tmpl["main_file"])
+        with open(main_path, "w") as f:
+            f.write(tmpl["main_content"].format(name=project_name))
+
+        # Extra files
+        for fname, content in tmpl["extra_files"].items():
+            fpath = os.path.join(expanded, fname)
+            with open(fpath, "w") as f:
+                f.write(content.format(name=project_name))
+
+        # README
+        readme_path = os.path.join(expanded, "README.md")
+        with open(readme_path, "w") as f:
+            f.write(f"# {project_name}\n\nA {language} project created by Nora.\n")
+
+        files_created = [tmpl["main_file"]] + list(tmpl["extra_files"].keys()) + ["README.md"]
+        return {
+            "status": "success",
+            "output": f"Project '{project_name}' created at {expanded}\nFiles: {', '.join(files_created)}",
+        }
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to create project: {e}"}
+
+
+def compile_and_run(file_path: str, language: str = "auto") -> dict:
+    """
+    Compile (if needed) and run a source code file. Automatically detects the
+    language from the file extension.
+
+    Supported: Python (.py), JavaScript (.js), C (.c), Java (.java),
+               Go (.go), Rust (.rs), HTML (.html — opens in browser)
+
+    Args:
+        file_path: Path to the source file (e.g. '~/Desktop/my-app/main.py').
+        language: Language override (default 'auto' — detected from extension).
+
+    Returns:
+        dict with 'status' and 'output' keys.
+    """
+    import os
+    expanded = os.path.expanduser(file_path)
+
+    if not os.path.exists(expanded):
+        return {"status": "error", "output": f"File not found: {expanded}"}
+
+    ext = os.path.splitext(expanded)[1].lower()
+    base = os.path.splitext(os.path.basename(expanded))[0]
+    dir_path = os.path.dirname(expanded)
+
+    lang = language.lower()
+    if lang == "auto":
+        ext_map = {
+            ".py": "python", ".js": "javascript", ".c": "c",
+            ".java": "java", ".go": "go", ".rs": "rust",
+            ".html": "html", ".htm": "html",
+        }
+        lang = ext_map.get(ext, "unknown")
+
+    if lang == "unknown":
+        return {"status": "error", "output": f"Cannot auto-detect language for extension '{ext}'. Please specify language."}
+
+    commands = {
+        "python": f"cd {shlex.quote(dir_path)} && python3 {shlex.quote(os.path.basename(expanded))}",
+        "javascript": f"cd {shlex.quote(dir_path)} && node {shlex.quote(os.path.basename(expanded))}",
+        "c": f"cd {shlex.quote(dir_path)} && gcc -o {shlex.quote(base)} {shlex.quote(os.path.basename(expanded))} && ./{shlex.quote(base)}",
+        "java": f"cd {shlex.quote(dir_path)} && javac {shlex.quote(os.path.basename(expanded))} && java {shlex.quote(base)}",
+        "go": f"cd {shlex.quote(dir_path)} && go run {shlex.quote(os.path.basename(expanded))}",
+        "rust": f"cd {shlex.quote(dir_path)} && rustc {shlex.quote(os.path.basename(expanded))} -o {shlex.quote(base)} && ./{shlex.quote(base)}",
+        "html": f"open {shlex.quote(expanded)}",
+    }
+
+    cmd = commands.get(lang)
+    if not cmd:
+        return {"status": "error", "output": f"Unsupported language: {lang}"}
+
+    try:
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=30,
+            cwd=dir_path,
+        )
+        output = result.stdout.strip()
+        if result.returncode != 0:
+            output += f"\n[stderr]: {result.stderr.strip()}" if result.stderr else ""
+            return {"status": "error", "output": f"Execution failed (exit code {result.returncode}):\n{_truncate_output(output)}"}
+        return {"status": "success", "output": _truncate_output(output) if output else "(program completed with no output)"}
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "output": "Execution timed out after 30 seconds."}
+    except Exception as e:
+        return {"status": "error", "output": f"Error: {e}"}
+
+
+# ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
 
@@ -787,5 +1134,16 @@ ALL_MAC_TOOLS = [
     move_path,
     create_directory,
     organize_directory,
+    # Personal Assistant Tools
+    write_file,
+    read_file,
+    append_to_file,
+    open_url,
+    search_files,
+    clipboard_copy,
+    clipboard_paste,
+    take_screenshot,
+    create_project,
+    compile_and_run,
 ]
 

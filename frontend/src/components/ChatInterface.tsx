@@ -9,7 +9,7 @@ import {
     Download,
     Shield,
     Cpu,
-    Wrench
+    Terminal
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -46,7 +46,7 @@ export function ChatInterface() {
         const file = e.target.files?.[0];
         if (file) {
             sendImage(file, "I am sharing an image. Please look at it.");
-            toast.success("Image uploaded to AI Technician");
+            toast.success("Image uploaded to AI Assistant");
         }
         e.target.value = "";
     }, [sendImage]);
@@ -138,7 +138,7 @@ export function ChatInterface() {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right flex flex-col items-end">
-                            <span className="text-sm font-medium text-white/90">AI Technician</span>
+                            <span className="text-sm font-medium text-white/90">Personal Assistant</span>
                             {isConnected ? (
                                 <span className="text-[10px] text-emerald-400 font-medium tracking-wider uppercase flex items-center gap-1.5 mt-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Systems Online
@@ -186,20 +186,20 @@ export function ChatInterface() {
                         className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group z-10"
                         onClick={handleMicTap}
                     >
-                        <span className="text-sky-100/50 text-xs mb-2 tracking-widest uppercase font-medium">Autonomous Technician</span>
+                        <span className="text-sky-100/50 text-xs mb-2 tracking-widest uppercase font-medium">Personal Assistant</span>
                         <span className="text-2xl font-light group-hover:text-sky-300 transition-colors gradient-text-premium">Tap to Connect</span>
                         <div className="flex items-center gap-3 mt-4">
                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
                                 <Shield className="w-3 h-3 text-emerald-400" />
-                                <span className="text-[10px] text-white/40">Diagnose</span>
+                                <span className="text-[10px] text-white/40">Write</span>
                             </div>
                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
-                                <Wrench className="w-3 h-3 text-sky-400" />
-                                <span className="text-[10px] text-white/40">Fix</span>
+                                <Terminal className="w-3 h-3 text-sky-400" />
+                                <span className="text-[10px] text-white/40">Code</span>
                             </div>
                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
                                 <Cpu className="w-3 h-3 text-violet-400" />
-                                <span className="text-[10px] text-white/40">Control</span>
+                                <span className="text-[10px] text-white/40">System</span>
                             </div>
                         </div>
                         <div className="mt-6 text-white/30 group-hover:text-white/80 transition-all group-hover:scale-110">
@@ -222,10 +222,10 @@ export function ChatInterface() {
                     {/* Suggested Queries */}
                     <div className="w-full overflow-x-auto hide-scrollbar flex gap-3 snap-x justify-center">
                         {[
-                            { icon: "🔧", text: "Fix my Bluetooth" },
-                            { icon: "🔇", text: "No sound from speakers" },
-                            { icon: "📶", text: "Fix my Wi-Fi connection" },
-                            { icon: "🐌", text: "My PC is running slow, fix it" },
+                            { icon: "📝", text: "Write a letter to my friend" },
+                            { icon: "💻", text: "Create a new Python project" },
+                            { icon: "🧹", text: "Clean up system temp files" },
+                            { icon: "🎵", text: "Open YouTube in Chrome" },
                         ].map((q, i) => (
                             <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg shadow-black/20 flex items-center gap-2.5" onClick={async () => { await connect(); try { await startRecording(); } catch {} sendText(q.text); }}>
                                 <span>{q.icon}</span>
@@ -285,7 +285,7 @@ export function ChatInterface() {
                 </button>
                 <div className="flex flex-col items-center">
                     <div className="text-sm font-medium tracking-wide text-white/90">
-                        {status === "connecting" ? "Establishing Connection..." : "Technician Active"}
+                        {status === "connecting" ? "Establishing Connection..." : "Assistant Active"}
                     </div>
                     {isAgentSpeaking && (
                         <div className="text-[10px] text-sky-400 font-medium uppercase tracking-widest mt-1 animate-pulse">

@@ -11,11 +11,15 @@ from bidi_streaming_agent.tools.windows_tools import (
     get_system_info, get_disk_usage, get_disk_health,
     get_top_processes, get_memory_usage, get_battery_info,
     check_for_updates, get_event_log_errors, run_system_file_checker, flush_dns_cache,
-    list_startup_programs, get_installed_programs
+    list_startup_programs, get_installed_programs,
+    # Personal Assistant Tools
+    write_file, read_file, append_to_file, open_url, search_files,
+    clipboard_copy, clipboard_paste, take_screenshot,
+    create_project, compile_and_run,
 )
 
 # Initialize FastMCP Server for Windows
-mcp = FastMCP("WindowsTechnicianMCP")
+mcp = FastMCP("NoraMCP")
 
 # Network Tools
 mcp.tool()(ping_host)
@@ -45,7 +49,19 @@ mcp.tool()(flush_dns_cache)
 mcp.tool()(list_startup_programs)
 mcp.tool()(get_installed_programs)
 
+# Personal Assistant Tools
+mcp.tool()(write_file)
+mcp.tool()(read_file)
+mcp.tool()(append_to_file)
+mcp.tool()(open_url)
+mcp.tool()(search_files)
+mcp.tool()(clipboard_copy)
+mcp.tool()(clipboard_paste)
+mcp.tool()(take_screenshot)
+mcp.tool()(create_project)
+mcp.tool()(compile_and_run)
+
 if __name__ == "__main__":
     # Start the MCP server
-    print("Starting WindowsTechnicianMCP server...", file=sys.stderr)
+    print("Starting NoraMCP server...", file=sys.stderr)
     mcp.run()

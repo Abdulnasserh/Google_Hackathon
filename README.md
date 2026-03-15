@@ -1,17 +1,17 @@
-# Nora — AI Live Technician
+# Nora — Personal AI Assistant
 
 > 🏆 **Google Live Agent Hackathon Submission**
 > **Category:** Live Agents 🗣️
-> An advanced multimodal AI technician that can **See, Hear, Speak, and Act** to help users troubleshoot PC issues in real-time with graceful interruption capabilities.
+> An advanced multimodal AI assistant that can **See, Hear, Speak, and Act** to help users accomplish complex tasks in real-time, from writing code and compiling apps to troubleshooting their PC.
 
 ## 🚀 Overview
 
-Nora is not just a chatbot; it's a Live Technician. Built using the **Google ADK (Agent Development Kit)** and the **Gemini Live API**, Nora allows users to:
-- Talk naturally about their computer problems via real-time bidirectional audio.
-- Share their screen or upload error screenshots.
-- Grant the AI access to run safe, whitelisted **CLI diagnostic commands** directly on their machine.
+Nora is not just a chatbot; she's an autonomous agent living on your local machine. Built using the **Google ADK (Agent Development Kit)** and the **Gemini Live API**, Nora allows users to:
+- Talk naturally about their tasks or problems via real-time bidirectional audio.
+- Share their screen or upload reference documents.
+- Grant the AI access to run safe, whitelisted **personal assistant tools** and CLI commands directly on their machine.
 
-The agent automatically detects whether the user is running **macOS** or **Windows** and seamlessly loads a tailored suite of troubleshooting tools (ping, DNS checks, system info, disk health, etc.) to diagnose issues without asking manual questions.
+The agent automatically detects whether the user is running **macOS** or **Windows** and seamlessly loads a tailored suite of tools (write_file, create_project, build_and_run, open_url, plus diagnostic tools) to autonomously complete tasks without asking manual questions.
 
 ---
 
@@ -22,7 +22,7 @@ The agent automatically detects whether the user is running **macOS** or **Windo
 | 👂 **Hear** | Real-time voice streaming at 16kHz PCM. The user can speak naturally, and the agent listens continuously. |
 | 🗣️ **Speak** | The agent responds with natural, sub-second latency voice (24kHz PCM) powered by Gemini 2.5 Flash Native Audio. |
 | 👁️ **See** | Users can share their screen, drag-and-drop images, or upload screenshots. The agent reads error codes, BSOD screens, and UI elements to provide visual context. |
-| 🛠️ **Act (Live Command Engine)** | Nora uses a **persistent, stateful command shell** living on the user's host machine. Instead of relying purely on hardcoded scripts, she synthesizes and streams raw bash/PowerShell commands in real-time, allowing her to solve *any* problem interactively. |
+| 🛠️ **Act (Live Command Engine)** | Nora uses a **persistent, stateful command shell** and high-level tools living on the user's host machine. She can write documents, scaffold entire coding projects (`create_project`, `compile_and_run`), open applications, manage clipboard data, and troubleshoot system issues interactively. |
 | 🛑 **Graceful Interruption** | A core hackathon requirement: users can interrupt the agent mid-sentence simply by speaking over it or clicking the mic. The system instantly clears audio buffers and coordinates backend cancellation events to handle the interruption smoothly. |
 
 ---
@@ -55,9 +55,9 @@ While the intelligence resides in Google Cloud, the *action* happens locally. Th
 - **Safety First:** The local daemon validates all incoming commands against a rigorous blocklist, preventing destructive operations or privacy-violating read access.
 
 ### 3. Cinematic UX & Real-Time Feedback
-We've broken the "textbox paradigm." When the user asks Nora to fix their Bluetooth:
-- They don't just get a text reply saying "I fixed it."
-- A **Live Activity** dashboard slides in via React, showing a cinematic stream of the exact execution results streaming back from the Client Daemon's PTY server. (`> launchctl kickstart -k system/com.apple.bluetoothd`).
+- We've broken the "textbox paradigm." When the user asks Nora to write a python app or fix their Bluetooth:
+- They don't just get a text reply saying "Here is the code."
+- A **Live Activity** dashboard slides in via React, showing a cinematic stream of the exact execution results streaming back from the Client Daemon (`> Project 'calculator' created`, or `> python3 main.py`).
 - **OS-Aware Onboarding:** The frontend detects the user's OS and provides tailored, one-click download links for the **Nora Daemon (.zip)** directly from the cloud backend.
 
 ---

@@ -785,6 +785,255 @@ def organize_directory(path: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Personal Assistant Tools — File I/O, URLs, Coding, Clipboard
+# ---------------------------------------------------------------------------
+
+def write_file(file_path: str, content: str) -> dict:
+    """Write content to a file on the user's computer."""
+    import os
+    expanded = os.path.expanduser(file_path)
+    parent = os.path.dirname(expanded)
+    try:
+        if parent and not os.path.exists(parent):
+            os.makedirs(parent, exist_ok=True)
+        with open(expanded, "w", encoding="utf-8") as f:
+            f.write(content)
+        size = os.path.getsize(expanded)
+        return {"status": "success", "output": f"File written: {expanded} ({size} bytes)"}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to write file: {e}"}
+
+
+def read_file(file_path: str, max_lines: int = 200) -> dict:
+    """Read the contents of a file on the user's computer."""
+    import os
+    expanded = os.path.expanduser(file_path)
+    try:
+        if not os.path.exists(expanded):
+            return {"status": "error", "output": f"File not found: {expanded}"}
+        if not os.path.isfile(expanded):
+            return {"status": "error", "output": f"Path is not a file: {expanded}"}
+        size = os.path.getsize(expanded)
+        with open(expanded, "r", encoding="utf-8", errors="replace") as f:
+            lines = []
+            for i, line in enumerate(f):
+                if i >= max_lines:
+                    lines.append(f"\n... [TRUNCATED: file has more than {max_lines} lines] ...")
+                    break
+                lines.append(line.rstrip("\n"))
+        return {"status": "success", "output": f"[{expanded} — {size} bytes]\n" + "\n".join(lines)}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to read file: {e}"}
+
+
+def append_to_file(file_path: str, content: str) -> dict:
+    """Append content to the end of an existing file."""
+    import os
+    expanded = os.path.expanduser(file_path)
+    try:
+        with open(expanded, "a", encoding="utf-8") as f:
+            f.write(content)
+        return {"status": "success", "output": f"Appended {len(content)} chars to {expanded}"}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to append: {e}"}
+
+
+def open_url(url: str) -> dict:
+    """Open a URL in the user's default web browser."""
+    output = _run_powershell(f"Start-Process '{url}'", timeout=10)
+    return {"status": "success", "output": f"Opened URL in browser: {url}. {output}"}
+
+
+def search_files(search_path: str, pattern: str) -> dict:
+    """Search for files by name within a directory tree on Windows."""
+    import os
+    expanded = os.path.expanduser(search_path)
+    output = _run_powershell(f"Get-ChildItem -Path '{expanded}' -Filter '{pattern}' -Recurse -ErrorAction SilentlyContinue | Select-Object FullName -First 30 | Format-Table -HideTableHeaders", timeout=20)
+    return {"status": "success", "output": output}
+
+
+def clipboard_copy(text: str) -> dict:
+    """Copy text to the Windows system clipboard."""
+    # Write to temp file then pipe to clip to avoid Powershell escaping issues
+    import os, tempfile
+    try:
+        fd, temp_path = tempfile.mkstemp(suffix=".txt")
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(text)
+        _run_cmd(["cmd.exe", "/c", f"clip < {temp_path}"], timeout=5)
+        os.remove(temp_path)
+        return {"status": "success", "output": f"Copied {len(text)} chars to clipboard."}
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to copy: {e}"}
+
+
+def clipboard_paste() -> dict:
+    """Get the current contents of the Windows system clipboard."""
+    output = _run_powershell("Get-Clipboard", timeout=5)
+    return {"status": "success", "output": f"Clipboard contents:\n{output}"}
+
+
+def take_screenshot(save_path: str = "~/Desktop/screenshot.png") -> dict:
+    """Take a screenshot on Windows."""
+    import os
+    expanded = os.path.expanduser(save_path).replace('\\', '/')
+    # Powershell script to take screenshot
+    ps_cmd = f"""
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    $Screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    $Width = $Screen.Width
+    $Height = $Screen.Height
+    $Left = $Screen.Left
+    $Top = $Screen.Top
+    $bitmap = New-Object System.Drawing.Bitmap $Width, $Height
+    $graphic = [System.Drawing.Graphics]::FromImage($bitmap)
+    $graphic.CopyFromScreen($Left, $Top, 0, 0, $bitmap.Size)
+    $bitmap.Save('{expanded}', [System.Drawing.Imaging.ImageFormat]::Png)
+    """
+    output = _run_powershell(ps_cmd, timeout=15)
+    if os.path.exists(expanded):
+        size = os.path.getsize(expanded)
+        return {"status": "success", "output": f"Screenshot saved: {expanded} ({size} bytes). {output}"}
+    return {"status": "error", "output": f"Screenshot failed. {output}"}
+
+
+def create_project(project_name: str, language: str = "python", path: str = "~/Desktop") -> dict:
+    """Scaffold a new coding project with a proper folder structure."""
+    import os
+
+    expanded = os.path.expanduser(os.path.join(path, project_name))
+    if os.path.exists(expanded):
+        return {"status": "error", "output": f"Directory already exists: {expanded}"}
+
+    templates = {
+        "python": {
+            "main_file": "main.py",
+            "main_content": '"""Main entry point for {name}."""\n\n\ndef main():\n    print("Hello from {name}!")\n\n\nif __name__ == "__main__":\n    main()\n',
+            "extra_files": {"requirements.txt": "# Add your dependencies here\n"},
+        },
+        "javascript": {
+            "main_file": "index.js",
+            "main_content": '// {name} - Main entry point\n\nconsole.log("Hello from {name}!");\n',
+            "extra_files": {
+                "package.json": '{{\n  "name": "{name}",\n  "version": "1.0.0",\n  "main": "index.js",\n  "scripts": {{\n    "start": "node index.js"\n  }}\n}}\n'
+            },
+        },
+        "html": {
+            "main_file": "index.html",
+            "main_content": '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>{name}</title>\n    <link rel="stylesheet" href="style.css">\n</head>\n<body>\n    <h1>Welcome to {name}</h1>\n    <script src="script.js"></script>\n</body>\n</html>\n',
+            "extra_files": {
+                "style.css": "/* {name} styles */\nbody {{\n    font-family: system-ui, sans-serif;\n    margin: 2rem;\n}}\n",
+                "script.js": '// {name} scripts\nconsole.log("{name} loaded!");\n',
+            },
+        },
+        "java": {
+            "main_file": "Main.java",
+            "main_content": 'public class Main {{\n    public static void main(String[] args) {{\n        System.out.println("Hello from {name}!");\n    }}\n}}\n',
+            "extra_files": {},
+        },
+        "c": {
+            "main_file": "main.c",
+            "main_content": '#include <stdio.h>\n\nint main() {{\n    printf("Hello from {name}!\\n");\n    return 0;\n}}\n',
+            "extra_files": {},
+        },
+        "go": {
+            "main_file": "main.go",
+            "main_content": 'package main\n\nimport "fmt"\n\nfunc main() {{\n\tfmt.Println("Hello from {name}!")\n}}\n',
+            "extra_files": {},
+        },
+        "rust": {
+            "main_file": "main.rs",
+            "main_content": 'fn main() {{\n    println!("Hello from {name}!");\n}}\n',
+            "extra_files": {},
+        },
+    }
+
+    lang = language.lower()
+    if lang not in templates:
+        return {"status": "error", "output": f"Unsupported language '{language}'. Supported: {', '.join(templates.keys())}"}
+
+    tmpl = templates[lang]
+    try:
+        os.makedirs(expanded, exist_ok=True)
+        main_path = os.path.join(expanded, tmpl["main_file"])
+        with open(main_path, "w") as f:
+            f.write(tmpl["main_content"].format(name=project_name))
+
+        for fname, content in tmpl["extra_files"].items():
+            fpath = os.path.join(expanded, fname)
+            with open(fpath, "w") as f:
+                f.write(content.format(name=project_name))
+
+        readme_path = os.path.join(expanded, "README.md")
+        with open(readme_path, "w") as f:
+            f.write(f"# {project_name}\n\nA {language} project created by Nora.\n")
+
+        files_created = [tmpl["main_file"]] + list(tmpl["extra_files"].keys()) + ["README.md"]
+        return {
+            "status": "success",
+            "output": f"Project '{project_name}' created at {expanded}\nFiles: {', '.join(files_created)}",
+        }
+    except Exception as e:
+        return {"status": "error", "output": f"Failed to create project: {e}"}
+
+
+def compile_and_run(file_path: str, language: str = "auto") -> dict:
+    """Compile (if needed) and run a source code file."""
+    import os, shlex
+    expanded = os.path.expanduser(file_path)
+
+    if not os.path.exists(expanded):
+        return {"status": "error", "output": f"File not found: {expanded}"}
+
+    ext = os.path.splitext(expanded)[1].lower()
+    base = os.path.splitext(os.path.basename(expanded))[0]
+    dir_path = os.path.dirname(expanded)
+
+    lang = language.lower()
+    if lang == "auto":
+        ext_map = {
+            ".py": "python", ".js": "javascript", ".c": "c",
+            ".java": "java", ".go": "go", ".rs": "rust",
+            ".html": "html", ".htm": "html",
+        }
+        lang = ext_map.get(ext, "unknown")
+
+    if lang == "unknown":
+        return {"status": "error", "output": f"Cannot auto-detect language for extension '{ext}'. Please specify language."}
+
+    commands = {
+        "python": f"python {shlex.quote(os.path.basename(expanded))}",
+        "javascript": f"node {shlex.quote(os.path.basename(expanded))}",
+        "c": f"gcc -o {shlex.quote(base)}.exe {shlex.quote(os.path.basename(expanded))} && .\\{shlex.quote(base)}.exe",
+        "java": f"javac {shlex.quote(os.path.basename(expanded))} && java {shlex.quote(base)}",
+        "go": f"go run {shlex.quote(os.path.basename(expanded))}",
+        "rust": f"rustc {shlex.quote(os.path.basename(expanded))} -o {shlex.quote(base)}.exe && .\\{shlex.quote(base)}.exe",
+        "html": f"Start-Process {shlex.quote(expanded)}",
+    }
+
+    cmd = commands.get(lang)
+    if not cmd:
+        return {"status": "error", "output": f"Unsupported language: {lang}"}
+
+    try:
+        import subprocess
+        # Prepend cd to the right directory
+        full_cmd = f"cd {shlex.quote(dir_path)}; {cmd}"
+        result = subprocess.run(
+            ["powershell", "-Command", full_cmd], capture_output=True, text=True, timeout=30,
+        )
+        output = result.stdout.strip()
+        if result.returncode != 0:
+            output += f"\n[stderr]: {result.stderr.strip()}" if result.stderr else ""
+            return {"status": "error", "output": f"Execution failed (exit code {result.returncode}):\n{_truncate_output(output)}"}
+        return {"status": "success", "output": _truncate_output(output) if output else "(program completed with no output)"}
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "output": "Execution timed out after 30 seconds."}
+    except Exception as e:
+        return {"status": "error", "output": f"Error: {e}"}
+
+# ---------------------------------------------------------------------------
 # All tools list (for easy import into the agent)
 # ---------------------------------------------------------------------------
 
@@ -831,5 +1080,16 @@ ALL_WINDOWS_TOOLS = [
     move_path,
     create_directory,
     organize_directory,
+    # Personal Assistant Tools
+    write_file,
+    read_file,
+    append_to_file,
+    open_url,
+    search_files,
+    clipboard_copy,
+    clipboard_paste,
+    take_screenshot,
+    create_project,
+    compile_and_run,
 ]
 
