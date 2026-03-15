@@ -277,7 +277,7 @@ async def websocket_endpoint(
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
                 prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                    voice_name="Puck" # High-quality premium voice
+                    voice_name="Aoede" # High-quality premium voice
                 )
             )
         )
