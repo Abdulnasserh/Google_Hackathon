@@ -178,6 +178,7 @@ async def health_check():
 
 @app.websocket("/ws/daemon/{session_id}")
 async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
+    session_id = session_id.lower()
     await websocket.accept()
     logger.info(f"[DAEMON] Connected for session: {session_id}")
     connected_daemons[session_id] = websocket
@@ -223,6 +224,7 @@ async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
 
 @app.websocket("/ws/status/{session_id}")
 async def status_websocket_endpoint(websocket: WebSocket, session_id: str):
+    session_id = session_id.lower()
     await websocket.accept()
     if session_id not in daemon_listeners:
         daemon_listeners[session_id] = []
@@ -272,6 +274,8 @@ async def websocket_endpoint(
             - interrupted                    → User interrupted agent
     """
     await websocket.accept()
+    user_id = user_id.lower()
+    session_id = session_id.lower()
     logger.info(f"[WS] Client connected: user={user_id}, session={session_id}")
 
     # =====================================================================
