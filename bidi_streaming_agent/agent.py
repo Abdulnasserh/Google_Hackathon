@@ -1,7 +1,7 @@
 """
-Nora AI PC Live Technician Agent — Root Agent Definition
-=========================================================
-This module defines the root AI agent for the PC Technician application.
+Nora Personal AI Assistant — Root Agent Definition
+==================================================
+This module defines the root AI agent for the Nora Personal Assistant application.
 The agent:
     1. Auto-detects the user's OS (macOS or Windows) at startup
     2. Connects to the correct MCP server (MacTechnicianMCP or WindowsTechnicianMCP)

@@ -42,8 +42,8 @@ class UI:
     @staticmethod
     def executing(tool, args):
         print()
-        print(f"{UI.MAGENTA}⚡ AI CONTROL OVERRIDE DETECTED{UI.RESET}")
-        print(f"  {UI.DIM}Tool:{UI.RESET} {tool}")
+        print(f"{UI.MAGENTA}⚡ NORA EXECUTING AUTONOMOUS COMMAND{UI.RESET}")
+        print(f"  {UI.DIM}Task Agent:{UI.RESET} {tool}")
         if 'command' in args or 'cmd' in args:
             cmd = args.get('command') or args.get('cmd')
             print(f"  {UI.DIM}Cmd:{UI.RESET}  {UI.BOLD}{UI.GREEN}>{UI.RESET} {cmd}")
@@ -94,7 +94,7 @@ async def daemon_loop(url: str, session_id: str):
     while True:
         try:
             async for websocket in websockets.connect(ws_url):
-                UI.success(f"Uplink Established! {UI.BOLD}Nora Live Technician is Monitoring.{UI.RESET}")
+                UI.success(f"Uplink Established! {UI.BOLD}Nora is now your Active Assistant.{UI.RESET}")
                 try:
                     # Send initial presence payload
                     await websocket.send(json.dumps({"type": "init", "os": os_sys}))
@@ -176,11 +176,11 @@ def main():
     print("     ░ ░░   ░ ▒░  ░ ▒ ▒░   ░▒ ░ ▒░  ▒   ▒▒ ░")
     print(f"        ░   ░ ░ ░ ░ ░ ▒    ░░   ░   ░   ▒   ")
     print(f"              ░     ░ ░     ░           ░  {UI.RESET}")
-    print(f"\n     {UI.BOLD}NORA AI TECHNICIAN — LOCAL HOST DAEMON{UI.RESET}")
-    print(f"     {UI.DIM}Terminal Control & Diagnostic Override Tool{UI.RESET}\n")
-    print("  [✓] Live Command Engine: Loaded")
-    print("  [✓] Process Manager: Loaded")
-    print("  [✓] Network Access: Granted\n")
+    print(f"\n     {UI.BOLD}NORA PERSONAL ASSISTANT — HOST DAEMON{UI.RESET}")
+    print(f"     {UI.DIM}Bridging Nora's Intelligence to your Local System{UI.RESET}\n")
+    print("  [✓] Autonomous Engine: Loaded")
+    print("  [✓] Resource Control: Granted")
+    print("  [✓] System Permissions: Active\n")
     
     session_id = input(f" {UI.YELLOW}►{UI.RESET} {UI.BOLD}Enter Session ID:{UI.RESET} ").strip()
     if not session_id:

@@ -2,7 +2,7 @@
  * WelcomeScreen — Shown when there are no messages yet
  * =====================================================
  * Hero section with capability cards and suggestion chips.
- * Updated to reflect Nora's autonomous technician capabilities.
+ * Updated to reflect Nora's expanded autonomous assistant capabilities.
  */
 
 import { Eye, Ear, MonitorSmartphone, Zap, DownloadCloud, Wrench, Cpu, Shield } from "lucide-react";
@@ -66,11 +66,12 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
 
                 <div className="space-y-2 pt-1">
                     <h2 className="text-3xl font-bold tracking-tight gradient-text-premium">
-                        Nora — AI Live Technician
+                        Nora — Personal AI Assistant
                     </h2>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                        I don't just diagnose — I <strong className="text-sky-400">autonomously fix</strong> your 
-                        computer. Tell me the problem and watch me work.
+                        I am your autonomous companion. I write code, manage documents, 
+                        and <strong className="text-sky-400">directly control</strong> your 
+                        computer to get things done.
                     </p>
                     <div className="flex items-center justify-center gap-4 mt-3">
                         <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/70">

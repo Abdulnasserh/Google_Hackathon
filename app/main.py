@@ -1,7 +1,7 @@
 """
-AI PC Live Technician — FastAPI WebSocket Server
+Nora Personal Assistant — FastAPI WebSocket Server
 =================================================
-This module implements the backend server for the AI PC Live Technician Agent.
+This module implements the backend server for Nora, an autonomous AI Personal Assistant.
 It uses FastAPI with WebSocket support for real-time bidirectional communication.
 
 Architecture Overview:
@@ -131,11 +131,11 @@ logger = logging.getLogger(__name__)
 # Phase 1: Application Initialization (once at startup)
 # =========================================================================
 
-APP_NAME = "ai-pc-technician"
+APP_NAME = "nora-personal-assistant"
 
 app = FastAPI(
-    title="AI PC Live Technician",
-    description="Real-time AI-powered PC troubleshooting via voice and text",
+    title="Nora Personal Assistant",
+    description="Real-time autonomous AI Personal Assistant that can See, Hear, Speak, and Act",
     version="1.0.0",
 )
 
