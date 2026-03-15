@@ -69,95 +69,47 @@ Google_Hackathon/
 ├── .env                          # API key + model config
 ├── requirements.txt              # Python dependencies
 ├── client_daemon.py              # Local execution daemon: receives WS tool calls from backend
-│
 ├── bidi_streaming_agent/         # Google ADK Agent Code
-│   ├── agent.py                  # Root agent: Persona, instruction sets, tool bindings
-│   ├── mcp_client_bridge.py      # Bridge: Spawns MCP server & dynamically wraps tools
-│   ├── mcp_servers/              # Standalone FastMCP servers
-│   │   ├── mac_mcp_server.py     # macOS FastMCP entry point
-│   │   └── windows_mcp_server.py # Windows FastMCP entry point
-│   └── tools/                    # Underlying CLI implementation logic
-│       ├── mac_tools.py          # 17 safe CLI tools for macOS (with output truncation)
-│       ├── windows_tools.py      # 20 safe CLI tools for Windows (with output truncation)
-│       └── terminal_session.py   # Persistent PTY server: maintains stateful terminal access
-│
-├── app/
-│   └── main.py                   # FastAPI WebSocket server (session, interrupt mgmt, tool interceptor)
-│
+├── app/main.py                   # FastAPI WebSocket server (session, interrupt mgmt, tool interceptor)
 ├── daemons/                      # Pre-built daemon binaries for one-click download
-│   ├── NoraDaemon-Windows.zip
-│   ├── NoraDaemon-macOS-AppleSilicon.zip
-│   └── NoraDaemon-macOS-Intel.zip
-│
 └── frontend/                     # React app (Vite + TypeScript)
-    └── src/
-        ├── hooks/
-        │   ├── useWebSocket.ts        # WS lifecycle, bidi-streaming, interruption handling
-        │   └── useAudioRecorder.ts    # Mic capture via AudioWorklet (16kHz PCM)
-        └── components/
-            ├── ChatInterface.tsx      # Voice-first UI (Orb, Activity Log, Screen Share)
-            ├── DaemonStatusOverlay.tsx # Daemon connection ceremony overlay
-            ├── Orb.tsx                # Animated AI voice orb visualization
-            ├── ParticleField.tsx      # Cinematic particle background
-            └── ui/                    # Shadcn UI primitives
 ```
 
 ---
 
 ## 🛠️ Spin-Up Instructions (For Judges)
 
-The project requires a local environment to allow the agent access to CLI diagnostic tools.
-
-### Prerequisites
-- Python 3.10+
-- Node.js & `pnpm`
-- A Gemini API Key
-
 ### 1. Backend Setup
-1. Clone the repository and navigate to the root directory.
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. Install dependencies:
+1. Clone the repository.
+2. Setup a Python 3.10+ virtual environment and install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-4. Set up your `.env` file in the root directory:
+3. Set up your `.env` file in the root directory:
    ```env
    GEMINI_API_KEY="your_api_key_here"
-   DEMO_AGENT_MODEL="gemini-2.5-flash-native-audio-preview-12-2025"
    ```
-5. Start the FastAPI server:
+4. Start the FastAPI server:
    ```bash
-   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 
 ### 2. Frontend Setup
-1. Open a second terminal and navigate to the `frontend` folder:
+1. Navigate to the `frontend` folder:
    ```bash
-   cd frontend
+   cd frontend && pnpm install && pnpm run dev
    ```
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Start the Vite development server:
-   ```bash
-   pnpm run dev
-   ```
-4. Open your browser to `http://localhost:5173`. Click the microphone icon to connect to the Live API and start talking!
+2. Open your browser to `http://localhost:5173`.
 
 ---
 
 ## ☁️ Google Cloud Deployment Notes
 
-While this specific application is designed to run locally to allow the AI access to the user's *local* CLI tools for PC troubleshooting, the backend infrastructure itself leverages Google Cloud.
+Nora is designed as a hybrid autonomous agent. While her "hands"—the local tools for terminal interaction, file management, and software development—exist on the user's machine, her "brain" and real-time communication backbone are powered entirely by Google Cloud.
 
 **How it uses Google Cloud:**
-- **Google ADK & Vertex AI/Gemini API:** The core intelligence and multimodal live streaming are powered completely by Google's cloud infrastructure via the Gemini Live API endpoint.
-- **Production Deployment Strategy:** In a production scenario, the FastAPI backend acts as a signaling server and is deployed via **Google Cloud Run** using a Dockerfile. The local CLI tools are packaged into a lightweight, downloadable client daemon (e.g., using PyInstaller) that connects via WebSocket to the Cloud Run backend, maintaining strict security and isolation.
+- **Google ADK & Vertex AI/Gemini API:** The core multimodal intelligence and live bidirectional streaming are driven by Google's cloud infrastructure via the Gemini Live API.
+- **Production Deployment Strategy:** The FastAPI backend is designed to be deployed on **Google Cloud Run** to act as a high-speed, stateful orchestrator. It manages session persistence and routes autonomous tool requests to the **Nora Daemon**—a lightweight client that connects via Secure WebSockets to give the agent whitelisted access to the host system.
 
 ---
 
@@ -168,3 +120,7 @@ While this specific application is designed to run locally to allow the AI acces
 - **Backend:** Python, FastAPI, Uvicorn, WebSockets, `asyncio`
 - **Frontend:** React 19, Vite, TypeScript, Tailwind CSS v4, Shadcn/UI
 - **Browser APIs:** Web Audio API, AudioWorklet (raw PCM conversion), Screen Capture API
+
+---
+
+*Built with ❤️ for the Google Live Agent Hackathon. #GeminiLiveAgentChallenge*
