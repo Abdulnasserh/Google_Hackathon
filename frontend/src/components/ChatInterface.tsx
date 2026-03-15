@@ -257,11 +257,14 @@ export function ChatInterface() {
                                 { icon: "🧹", text: "Clean up system temp files" },
                                 { icon: "🎵", text: "Open YouTube in Chrome" },
                             ].map((q, i) => (
-                                <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg flex items-center gap-2.5 shrink-0" onClick={async () => { await connect(); try { await startRecording(); } catch {} sendText(q.text); }}>
+                                <div key={i} className="whitespace-nowrap snap-center glass-card-premium px-5 py-3 text-sm font-light text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-all shadow-lg flex items-center gap-2.5 shrink-0" 
+                                     onClick={async () => { 
+                                         await connect(); 
+                                         sendText(q.text); 
+                                     }}>
                                     <span>{q.icon}</span>
                                     <span>{q.text}</span>
-                                </div>
-                            ))}
+                                </div>                            ))}
                         </div>
                     </div>
 

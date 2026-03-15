@@ -56,7 +56,7 @@ from bidi_streaming_agent.tools.windows_tools import ALL_WINDOWS_TOOLS
 from bidi_streaming_agent.tools.terminal_session import ALL_TERMINAL_TOOLS
 
 connected_daemons: dict[str, WebSocket] = {}
-daemon_responses: dict[str, asyncio.Future] = {}
+daemon_responses: dict[str, tuple[str, asyncio.Future]] = {} # call_id -> (session_id, future)
 daemon_listeners: dict[str, list[WebSocket]] = {}
 
 async def notify_daemon_status(session_id: str, status: str):
@@ -98,7 +98,7 @@ def build_remote_tools_for_session(session_id: str):
             
             call_id = str(uuid.uuid4())
             future = asyncio.get_running_loop().create_future()
-            daemon_responses[call_id] = future
+            daemon_responses[call_id] = (session_id, future)
             
             ws = connected_daemons[session_id]
             req = {"type": "tool_call", "call_id": call_id, "tool_name": _name, "args": kwargs}
@@ -197,9 +197,11 @@ async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
             elif msg_type == "tool_result":
                 call_id = data.get("call_id")
                 result_str = data.get("result", "No output")
-                future = daemon_responses.get(call_id)
-                if future and not future.done():
-                    future.set_result(result_str)
+                entry = daemon_responses.get(call_id)
+                if entry:
+                    _, future = entry
+                    if not future.done():
+                        future.set_result(result_str)
                     
     except WebSocketDisconnect:
         logger.info(f"[DAEMON] Disconnected for session: {session_id}")
@@ -207,6 +209,15 @@ async def daemon_websocket_endpoint(websocket: WebSocket, session_id: str):
         logger.error(f"[DAEMON] Error: {e}")
     finally:
         connected_daemons.pop(session_id, None)
+        # Fail any pending tool calls for this session
+        to_fail = [cid for cid, (sid, fut) in daemon_responses.items() if sid == session_id]
+        for cid in to_fail:
+            entry = daemon_responses.pop(cid, None)
+            if entry:
+                _, fut = entry
+                if not fut.done():
+                    fut.set_result(f"Error: Daemon for session {session_id} disconnected during execution.")
+        
         # Notify any browser listeners that the daemon disconnected
         await notify_daemon_status(session_id, "disconnected")
 

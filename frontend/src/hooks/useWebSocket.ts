@@ -89,8 +89,16 @@ export function useWebSocket() {
     const wsRef = useRef<WebSocket | null>(null);
     const statusWsRef = useRef<WebSocket | null>(null);
     const partialTextRef = useRef("");
-    const userIdRef = useRef(`user-${crypto.randomUUID().slice(0, 8)}`);
-    const sessionIdRef = useRef(`session-${crypto.randomUUID().slice(0, 8)}`);
+    const getStoredId = (key: string, prefix: string) => {
+        const stored = localStorage.getItem(key);
+        if (stored) return stored;
+        const newId = `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+        localStorage.setItem(key, newId);
+        return newId;
+    };
+
+    const userIdRef = useRef(getStoredId("nora-user-id", "user"));
+    const sessionIdRef = useRef(getStoredId("nora-session-id", "session"));
 
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const screenStreamRef = useRef<MediaStream | null>(null);
@@ -106,6 +114,7 @@ export function useWebSocket() {
     const maxReconnectAttempts = 5;
     const intentionalDisconnectRef = useRef(false);
     const isConnectingRef = useRef(false);
+    const connectPromiseRef = useRef<Promise<void> | null>(null);
 
     // -----------------------------------------------------------------------
     // Audio Player Setup (24kHz output from Gemini)
@@ -373,131 +382,118 @@ export function useWebSocket() {
     // -----------------------------------------------------------------------
     // Connect (with auto-reconnect on unexpected disconnects)
     // -----------------------------------------------------------------------
-    const connect = useCallback(async () => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) return;
-        if (isConnectingRef.current) return;
+    const connect = useCallback(async (): Promise<void> => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) return Promise.resolve();
+        if (connectPromiseRef.current) return connectPromiseRef.current;
 
         isConnectingRef.current = true;
         intentionalDisconnectRef.current = false;
         clearReconnectTimer();
         setStatus("connecting");
 
-        await initAudioPlayer();
+        const promise = new Promise<void>(async (resolve, reject) => {
+            await initAudioPlayer();
 
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws/${userIdRef.current}/${sessionIdRef.current}`;
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${protocol}//${window.location.host}/ws/${userIdRef.current}/${sessionIdRef.current}`;
 
-        try {
-            const ws = new WebSocket(wsUrl);
-            wsRef.current = ws;
+            try {
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
 
-            ws.onopen = () => {
-                setStatus("connected");
-                reconnectAttemptsRef.current = 0;
-                isConnectingRef.current = false;
-                console.log("[WS] Connected to AI PC Technician agent");
+                ws.onopen = () => {
+                    setStatus("connected");
+                    reconnectAttemptsRef.current = 0;
+                    isConnectingRef.current = false;
+                    connectPromiseRef.current = null;
+                    console.log("[WS] Connected to AI PC Technician agent");
 
-                // Play premium connection chime natively (no audio files needed)
-                try {
-                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-                    // Base tone
-                    const osc1 = audioCtx.createOscillator();
-                    osc1.type = "sine";
-                    osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-
-                    // High sparkle
-                    const osc2 = audioCtx.createOscillator();
-                    osc2.type = "sine";
-                    osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
-
-                    // Envelope
-                    const gainNode = audioCtx.createGain();
-                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.05); // Quick fade in
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5); // Smooth fade out
-
-                    osc1.connect(gainNode);
-                    osc2.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    osc1.start();
-                    osc2.start();
-                    osc1.stop(audioCtx.currentTime + 0.5);
-                    osc2.stop(audioCtx.currentTime + 0.5);
-                } catch (e) {
-                    console.error("[WS] Failed to play connection sound:", e);
-                }
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const agentEvent: AgentEvent = JSON.parse(event.data);
-                    handleEvent(agentEvent);
-                } catch (err) {
-                    console.error("[WS] Failed to parse event:", err);
-                }
-            };
-
-            ws.onerror = (err) => {
-                console.error("[WS] WebSocket error:", err);
-                isConnectingRef.current = false;
-            };
-
-            ws.onclose = (closeEvent) => {
-                isConnectingRef.current = false;
-                setIsAgentSpeaking(false);
-                partialTextRef.current = "";
-
-                // Clear audio buffer on disconnect
-                if (audioWorkletNodeRef.current) {
-                    audioWorkletNodeRef.current.port.postMessage({ command: "endOfAudio" });
-                }
-
-                // Finalize any partial messages
-                setMessages((prev) =>
-                    prev.map((m) =>
-                        m.isPartial ? { ...m, isPartial: false } : m
-                    )
-                );
-
-                if (intentionalDisconnectRef.current) {
-                    // User intentionally disconnected — stay disconnected
-                    setStatus("disconnected");
-                    console.log("[WS] Intentionally disconnected");
-                } else if (
-                    closeEvent.code !== 1000 &&
-                    closeEvent.code !== 1001 &&
-                    reconnectAttemptsRef.current < maxReconnectAttempts
-                ) {
-                    // Abnormal close — attempt auto-reconnect with backoff
-                    const attempt = reconnectAttemptsRef.current + 1;
-                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 15000);
-                    console.log(
-                        `[WS] Unexpected disconnect (code ${closeEvent.code}). ` +
-                        `Reconnecting in ${delay}ms (attempt ${attempt}/${maxReconnectAttempts})...`
-                    );
-                    setStatus("connecting");
-                    reconnectAttemptsRef.current = attempt;
-                    reconnectTimerRef.current = setTimeout(() => {
-                        // eslint-disable-next-line
-                        connect();
-                    }, delay);
-                } else {
-                    setStatus("disconnected");
-                    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-                        console.warn("[WS] Max reconnect attempts reached. Giving up.");
-                        reconnectAttemptsRef.current = 0;
-                    } else {
-                        console.log("[WS] Disconnected (normal close)");
+                    // Play premium connection chime
+                    try {
+                        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const osc1 = audioCtx.createOscillator();
+                        osc1.type = "sine";
+                        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                        const osc2 = audioCtx.createOscillator();
+                        osc2.type = "sine";
+                        osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime);
+                        const gainNode = audioCtx.createGain();
+                        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.05);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                        osc1.connect(gainNode);
+                        osc2.connect(gainNode);
+                        gainNode.connect(audioCtx.destination);
+                        osc1.start();
+                        osc2.start();
+                        osc1.stop(audioCtx.currentTime + 0.5);
+                        osc2.stop(audioCtx.currentTime + 0.5);
+                    } catch (e) {
+                        console.error("[WS] Failed to play connection sound:", e);
                     }
-                }
-            };
-        } catch (err) {
-            console.error("[WS] Failed to create WebSocket:", err);
-            isConnectingRef.current = false;
-            setStatus("error");
-        }
+                    resolve();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const agentEvent: AgentEvent = JSON.parse(event.data);
+                        handleEvent(agentEvent);
+                    } catch (err) {
+                        console.error("[WS] Failed to parse event:", err);
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    console.error("[WS] WebSocket error:", err);
+                    isConnectingRef.current = false;
+                    connectPromiseRef.current = null;
+                    setStatus("error");
+                    reject(err);
+                };
+
+                ws.onclose = (closeEvent) => {
+                    isConnectingRef.current = false;
+                    connectPromiseRef.current = null;
+                    setIsAgentSpeaking(false);
+                    partialTextRef.current = "";
+
+                    if (audioWorkletNodeRef.current) {
+                        audioWorkletNodeRef.current.port.postMessage({ command: "endOfAudio" });
+                    }
+
+                    setMessages((prev) =>
+                        prev.map((m) => (m.isPartial ? { ...m, isPartial: false } : m))
+                    );
+
+                    if (intentionalDisconnectRef.current) {
+                        setStatus("disconnected");
+                    } else if (
+                        closeEvent.code !== 1000 &&
+                        closeEvent.code !== 1001 &&
+                        reconnectAttemptsRef.current < maxReconnectAttempts
+                    ) {
+                        const attempt = reconnectAttemptsRef.current + 1;
+                        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 15000);
+                        setStatus("connecting");
+                        reconnectAttemptsRef.current = attempt;
+                        reconnectTimerRef.current = setTimeout(() => {
+                            connect();
+                        }, delay);
+                    } else {
+                        setStatus("disconnected");
+                    }
+                };
+            } catch (err) {
+                console.error("[WS] Failed to create WebSocket:", err);
+                isConnectingRef.current = false;
+                connectPromiseRef.current = null;
+                setStatus("error");
+                reject(err);
+            }
+        });
+
+        connectPromiseRef.current = promise;
+        return promise;
     }, [handleEvent, initAudioPlayer, clearReconnectTimer]);
 
     // -----------------------------------------------------------------------
