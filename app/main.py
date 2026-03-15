@@ -490,10 +490,16 @@ frontend_path = Path(__file__).parent.parent / "dist"
 if frontend_path.exists():
     app.mount("/assets", StaticFiles(directory=frontend_path / "assets"), name="assets")
 
+# Serve Daemon binaries
+daemons_path = Path(__file__).parent.parent / "daemons"
+if daemons_path.exists():
+    app.mount("/daemons", StaticFiles(directory=daemons_path), name="daemons")
+
+if frontend_path.exists():
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         # Prevent intercepting the WebSocket or Health check paths
-        if full_path.startswith("ws/") or full_path == "health":
+        if full_path.startswith("ws/") or full_path == "health" or full_path.startswith("daemons/"):
             return None # FastAPI will continue to search routing table
         
         # Check if the requested file exists (e.g. logo.png, robots.txt)

@@ -152,24 +152,64 @@ export function WelcomeScreen({ isConnected, onSendText, onConnect }: WelcomeScr
                         Connect Now
                     </Button>
 
-                    <div className="mt-8 flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium uppercase tracking-widest">
-                            <DownloadCloud className="h-4 w-4" />
-                            Diagnostic Daemon
+                    <div className="mt-8 flex flex-col items-center gap-4 w-full max-w-sm">
+                        <div className="flex items-center gap-2 text-xs text-sky-400 font-bold uppercase tracking-[0.2em]">
+                            <Zap className="h-4 w-4 animate-pulse" />
+                            Bridge the Gap
                         </div>
-                        <p className="text-[11px] text-muted-foreground max-w-[280px] text-center leading-snug">
-                            Nora needs a lightweight daemon running on your machine to diagnose <strong>and fix</strong> issues remotely and securely.
-                        </p>
-                        <div className="flex gap-2">
-                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
-                                Windows
-                            </a>
-                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
-                                Mac (Intel)
-                            </a>
-                            <a href="https://github.com/Abdulnasserh/Google_Hackathon/actions" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 px-3 py-1.5 rounded-md hover:bg-sky-500/20">
-                                Mac (Apple Silicon)
-                            </a>
+                        
+                        <div className="glass-card-premium p-5 border-sky-500/20 bg-sky-500/5 space-y-3 relative overflow-hidden group">
+                            {/* Decorative background glow */}
+                            <div className="absolute -top-10 -right-10 w-24 h-24 bg-sky-500/10 blur-2xl rounded-full" />
+                            
+                            <p className="text-[12px] text-foreground font-semibold leading-tight">
+                                Nora is a "ghost in the shell." Give her a body to act.
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                To unlock Nora's ability to <span className="text-sky-400 font-medium">autonomously fix</span> your machine, you'll need the Diagnostic Daemon. 
+                                It's a secure, lightweight bridge that lets Nora's intelligence touch your hardware.
+                            </p>
+
+                            <Separator className="bg-white/5" />
+
+                            <div className="space-y-2 pt-1">
+                                <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Recommended for your {(() => {
+                                    const ua = navigator.userAgent;
+                                    if (ua.includes("Win")) return "Windows PC";
+                                    if (ua.includes("Mac")) return "Mac";
+                                    return "Device";
+                                })()}:</p>
+                                
+                                <div className="flex flex-wrap gap-2">
+                                    {navigator.userAgent.includes("Win") ? (
+                                        <Button asChild size="sm" className="h-8 bg-sky-600 hover:bg-sky-500 text-white border-none shadow-lg shadow-sky-900/40">
+                                            <a href="/daemons/NoraDaemon-Windows.zip" download>
+                                                <DownloadCloud className="w-3.5 h-3.5 mr-2" />
+                                                Download for Windows
+                                            </a>
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <Button asChild size="sm" className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white border-none shadow-lg shadow-indigo-900/40">
+                                                <a href="/daemons/NoraDaemon-macOS-AppleSilicon.zip" download>
+                                                    <DownloadCloud className="w-3.5 h-3.5 mr-2" />
+                                                    Mac (Apple Silicon)
+                                                </a>
+                                            </Button>
+                                            <Button asChild variant="outline" size="sm" className="h-8 border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground">
+                                                <a href="/daemons/NoraDaemon-macOS-Intel.zip" download>
+                                                    <DownloadCloud className="w-3.5 h-3.5 mr-2" />
+                                                    Mac (Intel)
+                                                </a>
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <p className="text-[9px] text-muted-foreground/60 italic pt-1">
+                                Secure. Sandboxed. Open Source. Nora only runs whitelisted commands you can see in the log.
+                            </p>
                         </div>
                     </div>
                 </div>
