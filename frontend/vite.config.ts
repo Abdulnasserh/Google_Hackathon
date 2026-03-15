@@ -20,6 +20,9 @@ export default defineConfig({
       '/health': {
         target: 'http://localhost:8000',
       },
+      '/daemons': {
+        target: 'http://localhost:8000',
+      },
     },
   },
 })
