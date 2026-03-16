@@ -6,7 +6,7 @@
 
 ## 🚀 Overview
 
-Nora is not just a chatbot; she's an autonomous agent living on your local machine. Built using the **Google ADK (Agent Development Kit)** and the **Gemini Live API**, Nora allows users to:
+Nora is not just a chatbot; she's an open-source autonomous AI agent living on your local machine. Built using the **Google ADK (Agent Development Kit)** and the **Gemini Live API**, Nora allows users to:
 - Talk naturally about their tasks or problems via real-time bidirectional audio.
 - Share their screen or upload reference documents.
 - Grant the AI access to run safe, whitelisted **personal assistant tools** and CLI commands directly on their machine.
